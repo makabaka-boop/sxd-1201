@@ -9,6 +9,7 @@ function generateId(): string {
 
 function getMockData(): Material[] {
   const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
   return [
     {
       id: "mock-1",
@@ -22,6 +23,10 @@ function getMockData(): Material[] {
       status: "ready",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "BATCH-001",
+      expectedArrivalTime: now - day,
+      actualArrivalTime: now - day + 2 * 60 * 60 * 1000,
+      arrivalRemark: "物流正常，包装完好",
     },
     {
       id: "mock-2",
@@ -35,6 +40,10 @@ function getMockData(): Material[] {
       status: "pending-review",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "BATCH-001",
+      expectedArrivalTime: now + day,
+      actualArrivalTime: null,
+      arrivalRemark: "",
     },
     {
       id: "mock-3",
@@ -48,6 +57,10 @@ function getMockData(): Material[] {
       status: "pending-prep",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "BATCH-002",
+      expectedArrivalTime: now - 2 * day,
+      actualArrivalTime: null,
+      arrivalRemark: "供应商延迟发货",
     },
     {
       id: "mock-4",
@@ -61,6 +74,10 @@ function getMockData(): Material[] {
       status: "hold",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "",
+      expectedArrivalTime: null,
+      actualArrivalTime: null,
+      arrivalRemark: "",
     },
     {
       id: "mock-5",
@@ -74,6 +91,10 @@ function getMockData(): Material[] {
       status: "ready",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "BATCH-001",
+      expectedArrivalTime: now - 2 * day,
+      actualArrivalTime: now - 2 * day + 3 * 60 * 60 * 1000,
+      arrivalRemark: "",
     },
     {
       id: "mock-6",
@@ -87,6 +108,10 @@ function getMockData(): Material[] {
       status: "pending-review",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "BATCH-002",
+      expectedArrivalTime: now + 2 * day,
+      actualArrivalTime: null,
+      arrivalRemark: "需现场签收",
     },
     {
       id: "mock-7",
@@ -100,6 +125,10 @@ function getMockData(): Material[] {
       status: "pending-prep",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "",
+      expectedArrivalTime: null,
+      actualArrivalTime: null,
+      arrivalRemark: "",
     },
     {
       id: "mock-8",
@@ -113,6 +142,10 @@ function getMockData(): Material[] {
       status: "ready",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: "BATCH-001",
+      expectedArrivalTime: now - day,
+      actualArrivalTime: now - day + 60 * 60 * 1000,
+      arrivalRemark: "",
     },
   ];
 }
@@ -165,6 +198,11 @@ export function useMaterials() {
     return Array.from(set);
   });
 
+  const arrivalBatches = computed(() => {
+    const set = new Set(materials.value.map((m) => m.arrivalBatch).filter(Boolean));
+    return Array.from(set);
+  });
+
   function addMaterial(data: Partial<Material>): Material {
     const now = Date.now();
     const maxOrder = materials.value.reduce(
@@ -183,6 +221,10 @@ export function useMaterials() {
       status: data.status || "pending-prep",
       createdAt: now,
       updatedAt: now,
+      arrivalBatch: data.arrivalBatch || "",
+      expectedArrivalTime: data.expectedArrivalTime ?? null,
+      actualArrivalTime: data.actualArrivalTime ?? null,
+      arrivalRemark: data.arrivalRemark || "",
     };
     materials.value.push(newMaterial);
     return newMaterial;
@@ -242,6 +284,7 @@ export function useMaterials() {
     sortedMaterials,
     themes,
     areas,
+    arrivalBatches,
     addMaterial,
     updateMaterial,
     deleteMaterial,

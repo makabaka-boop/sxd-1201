@@ -3,16 +3,34 @@ import { Filter, X, ChevronDown, ChevronUp } from "lucide-vue-next";
 import { ref } from "vue";
 import { useFilter } from "@/composables/useFilter";
 import { useMaterials } from "@/composables/useMaterials";
-import { STATUS_LABELS, STATUS_COLORS } from "@/types";
-import type { MaterialStatus } from "@/types";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  ARRIVAL_STATUS_LABELS,
+  ARRIVAL_STATUS_COLORS,
+} from "@/types";
+import type { MaterialStatus, ArrivalStatus } from "@/types";
 
-const { filter, toggleStatus, setTheme, setArea, setQuantityMin, setQuantityMax, clearFilters, hasActiveFilters } = useFilter();
-const { themes, areas } = useMaterials();
+const {
+  filter,
+  toggleStatus,
+  setTheme,
+  setArea,
+  setQuantityMin,
+  setQuantityMax,
+  setArrivalBatch,
+  toggleArrivalStatus,
+  clearFilters,
+  hasActiveFilters,
+} = useFilter();
+const { themes, areas, arrivalBatches } = useMaterials();
 
 const showThemeDropdown = ref(false);
 const showAreaDropdown = ref(false);
+const showArrivalBatchDropdown = ref(false);
 
 const statusOptions: MaterialStatus[] = ["pending-prep", "pending-review", "ready", "hold"];
+const arrivalStatusOptions: ArrivalStatus[] = ["pending", "arrived", "overdue", "not-set"];
 
 function selectTheme(theme: string) {
   setTheme(theme === filter.value.theme ? "" : theme);
@@ -22,6 +40,11 @@ function selectTheme(theme: string) {
 function selectArea(area: string) {
   setArea(area === filter.value.area ? "" : area);
   showAreaDropdown.value = false;
+}
+
+function selectArrivalBatch(batch: string) {
+  setArrivalBatch(batch === filter.value.arrivalBatch ? "" : batch);
+  showArrivalBatchDropdown.value = false;
 }
 
 function handleQuantityMinInput(event: Event) {
@@ -126,6 +149,42 @@ function handleQuantityMaxInput(event: Event) {
       </div>
 
       <div>
+        <label class="text-xs text-dark-400 mb-2 block">到场批次</label>
+        <div class="relative">
+          <button
+            @click="showArrivalBatchDropdown = !showArrivalBatchDropdown"
+            class="w-full px-3 py-2 text-sm bg-dark-700 border border-dark-600 rounded-lg text-left text-dark-200 flex items-center justify-between hover:border-dark-500 transition-colors"
+          >
+            <span :class="{ 'text-dark-500': !filter.arrivalBatch }">
+              {{ filter.arrivalBatch || "全部批次" }}
+            </span>
+            <ChevronDown v-if="!showArrivalBatchDropdown" class="w-4 h-4 text-dark-400" />
+            <ChevronUp v-else class="w-4 h-4 text-dark-400" />
+          </button>
+          <div
+            v-if="showArrivalBatchDropdown"
+            class="absolute top-full left-0 right-0 mt-1 bg-dark-700 border border-dark-600 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto"
+          >
+            <button
+              @click="selectArrivalBatch('')"
+              class="w-full px-3 py-2 text-sm text-left text-dark-300 hover:bg-dark-600 transition-colors"
+            >
+              全部批次
+            </button>
+            <button
+              v-for="batch in arrivalBatches"
+              :key="batch"
+              @click="selectArrivalBatch(batch)"
+              class="w-full px-3 py-2 text-sm text-left hover:bg-dark-600 transition-colors"
+              :class="filter.arrivalBatch === batch ? 'text-primary-400' : 'text-dark-200'"
+            >
+              {{ batch }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div>
         <label class="text-xs text-dark-400 mb-2 block">复核状态</label>
         <div class="flex flex-wrap gap-2">
           <button
@@ -140,6 +199,25 @@ function handleQuantityMaxInput(event: Event) {
             ]"
           >
             {{ STATUS_LABELS[status] }}
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-dark-400 mb-2 block">到场状态</label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="status in arrivalStatusOptions"
+            :key="status"
+            @click="toggleArrivalStatus(status)"
+            class="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+            :class="[
+              filter.arrivalStatuses.includes(status)
+                ? `${ARRIVAL_STATUS_COLORS[status]} text-white`
+                : 'bg-dark-700 text-dark-400 hover:bg-dark-600'
+            ]"
+          >
+            {{ ARRIVAL_STATUS_LABELS[status] }}
           </button>
         </div>
       </div>

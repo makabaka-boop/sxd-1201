@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { GripVertical, Edit2, Trash2, AlertCircle, AlertTriangle } from "lucide-vue-next";
+import { GripVertical, Edit2, Trash2, AlertCircle, AlertTriangle, Truck, Package } from "lucide-vue-next";
 import type { Material } from "@/types";
-import { STATUS_LABELS, STATUS_COLORS, STATUS_BG_COLORS, STATUS_TEXT_COLORS } from "@/types";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  STATUS_BG_COLORS,
+  STATUS_TEXT_COLORS,
+  ARRIVAL_STATUS_LABELS,
+  ARRIVAL_STATUS_BG_COLORS,
+  ARRIVAL_STATUS_TEXT_COLORS,
+  getArrivalStatus,
+  formatTimestamp,
+} from "@/types";
 import { useChecker } from "@/composables/useChecker";
 import { computed } from "vue";
 
@@ -20,6 +30,7 @@ const { getMaterialIssues, hasIssue } = useChecker();
 
 const issues = computed(() => getMaterialIssues(props.material.id));
 const hasIssues = computed(() => hasIssue(props.material.id));
+const arrivalStatus = computed(() => getArrivalStatus(props.material));
 </script>
 
 <template>
@@ -44,12 +55,21 @@ const hasIssues = computed(() => hasIssue(props.material.id));
           <h3 class="font-medium text-white text-sm truncate flex-1">
             {{ material.name || '未命名物料' }}
           </h3>
-          <span
-            class="flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap"
-            :class="[STATUS_BG_COLORS[material.status], STATUS_TEXT_COLORS[material.status]]"
-          >
-            {{ STATUS_LABELS[material.status] }}
-          </span>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <span
+              class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap"
+              :class="[STATUS_BG_COLORS[material.status], STATUS_TEXT_COLORS[material.status]]"
+            >
+              {{ STATUS_LABELS[material.status] }}
+            </span>
+            <span
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap"
+              :class="[ARRIVAL_STATUS_BG_COLORS[arrivalStatus], ARRIVAL_STATUS_TEXT_COLORS[arrivalStatus]]"
+            >
+              <Package class="w-3 h-3" />
+              {{ ARRIVAL_STATUS_LABELS[arrivalStatus] }}
+            </span>
+          </div>
         </div>
 
         <div class="flex flex-wrap gap-1.5 mb-2">
@@ -64,6 +84,13 @@ const hasIssues = computed(() => hasIssue(props.material.id));
             class="inline-flex items-center px-1.5 py-0.5 rounded bg-dark-700 text-dark-300 text-xs"
           >
             {{ material.area }}
+          </span>
+          <span
+            v-if="material.arrivalBatch"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-dark-700 text-primary-300 text-xs"
+          >
+            <Truck class="w-3 h-3" />
+            {{ material.arrivalBatch }}
           </span>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-dark-700 text-dark-400 text-xs">
             #{{ material.order }}
@@ -89,12 +116,34 @@ const hasIssues = computed(() => hasIssue(props.material.id));
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-1.5">
+          <div class="flex items-center gap-1 min-w-0">
+            <span class="text-dark-500 flex-shrink-0">预计</span>
+            <span class="text-dark-300 truncate" :title="formatTimestamp(material.expectedArrivalTime)">
+              {{ formatTimestamp(material.expectedArrivalTime) }}
+            </span>
+          </div>
+          <div class="flex items-center gap-1 min-w-0">
+            <span class="text-dark-500 flex-shrink-0">实际</span>
+            <span class="text-dark-300 truncate" :title="formatTimestamp(material.actualArrivalTime)">
+              {{ formatTimestamp(material.actualArrivalTime) }}
+            </span>
+          </div>
+        </div>
+
         <div class="text-xs text-dark-500">
           风险：
           <span v-if="material.risk" class="text-dark-400 line-clamp-1">
             {{ material.risk }}
           </span>
           <span v-else class="text-red-400/70">未填写</span>
+        </div>
+
+        <div v-if="material.arrivalRemark" class="text-xs text-dark-500 mt-1">
+          备注：
+          <span class="text-dark-400 line-clamp-1">
+            {{ material.arrivalRemark }}
+          </span>
         </div>
 
         <div v-if="hasIssues" class="mt-2 flex flex-wrap gap-1">

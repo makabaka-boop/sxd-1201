@@ -4,6 +4,12 @@ export type MaterialStatus =
   | "ready"
   | "hold";
 
+export type ArrivalStatus =
+  | "pending"
+  | "arrived"
+  | "overdue"
+  | "not-set";
+
 export interface Material {
   id: string;
   name: string;
@@ -16,6 +22,10 @@ export interface Material {
   status: MaterialStatus;
   createdAt: number;
   updatedAt: number;
+  arrivalBatch: string;
+  expectedArrivalTime: number | null;
+  actualArrivalTime: number | null;
+  arrivalRemark: string;
 }
 
 export interface FilterState {
@@ -24,6 +34,8 @@ export interface FilterState {
   statuses: MaterialStatus[];
   quantityMin: number | null;
   quantityMax: number | null;
+  arrivalBatch: string;
+  arrivalStatuses: ArrivalStatus[];
 }
 
 export interface CheckResult {
@@ -31,6 +43,8 @@ export interface CheckResult {
   duplicateOrder: Material[];
   missingSize: Material[];
   missingRisk: Material[];
+  missingExpectedArrival: Material[];
+  overdueNotArrived: Material[];
 }
 
 export const STATUS_LABELS: Record<MaterialStatus, string> = {
@@ -60,3 +74,55 @@ export const STATUS_BG_COLORS: Record<MaterialStatus, string> = {
   ready: "bg-green-500/10",
   hold: "bg-red-500/10",
 };
+
+export const ARRIVAL_STATUS_LABELS: Record<ArrivalStatus, string> = {
+  pending: "待到场",
+  arrived: "已到场",
+  overdue: "已逾期",
+  "not-set": "未设置",
+};
+
+export const ARRIVAL_STATUS_COLORS: Record<ArrivalStatus, string> = {
+  pending: "bg-yellow-500",
+  arrived: "bg-green-500",
+  overdue: "bg-red-500",
+  "not-set": "bg-gray-500",
+};
+
+export const ARRIVAL_STATUS_TEXT_COLORS: Record<ArrivalStatus, string> = {
+  pending: "text-yellow-400",
+  arrived: "text-green-400",
+  overdue: "text-red-400",
+  "not-set": "text-gray-400",
+};
+
+export const ARRIVAL_STATUS_BG_COLORS: Record<ArrivalStatus, string> = {
+  pending: "bg-yellow-500/10",
+  arrived: "bg-green-500/10",
+  overdue: "bg-red-500/10",
+  "not-set": "bg-gray-500/10",
+};
+
+export function getArrivalStatus(material: Material): ArrivalStatus {
+  if (!material.expectedArrivalTime && !material.actualArrivalTime) {
+    return "not-set";
+  }
+  if (material.actualArrivalTime) {
+    return "arrived";
+  }
+  if (material.expectedArrivalTime && material.expectedArrivalTime < Date.now()) {
+    return "overdue";
+  }
+  return "pending";
+}
+
+export function formatTimestamp(ts: number | null): string {
+  if (!ts) return "-";
+  return new Date(ts).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

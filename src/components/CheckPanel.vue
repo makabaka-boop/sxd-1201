@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { AlertTriangle, AlertCircle, Hash, Ruler, FileWarning, ChevronDown, ChevronUp } from "lucide-vue-next";
+import {
+  AlertTriangle,
+  AlertCircle,
+  Hash,
+  Ruler,
+  FileWarning,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Truck,
+} from "lucide-vue-next";
 import { useChecker } from "@/composables/useChecker";
 import type { Material } from "@/types";
 
@@ -16,48 +26,13 @@ const expandedSections = ref({
   duplicateOrder: true,
   missingSize: true,
   missingRisk: true,
+  missingExpectedArrival: true,
+  overdueNotArrived: true,
 });
 
-interface SectionConfig {
-  key: keyof typeof expandedSections.value;
-  title: string;
-  icon: any;
-  color: string;
-  data: Material[];
-}
+type SectionKey = keyof typeof expandedSections.value;
 
-const sections = ref<SectionConfig[]>([
-  {
-    key: "zeroQuantity",
-    title: "数量为零",
-    icon: AlertCircle,
-    color: "text-red-400",
-    data: [],
-  },
-  {
-    key: "duplicateOrder",
-    title: "顺序重复",
-    icon: Hash,
-    color: "text-orange-400",
-    data: [],
-  },
-  {
-    key: "missingSize",
-    title: "尺寸缺失",
-    icon: Ruler,
-    color: "text-yellow-400",
-    data: [],
-  },
-  {
-    key: "missingRisk",
-    title: "风险未填",
-    icon: FileWarning,
-    color: "text-blue-400",
-    data: [],
-  },
-]);
-
-function toggleSection(key: keyof typeof expandedSections.value) {
+function toggleSection(key: SectionKey) {
   expandedSections.value[key] = !expandedSections.value[key];
 }
 
@@ -96,12 +71,14 @@ function handleItemClick(material: Material) {
           { key: 'duplicateOrder', title: '顺序重复', icon: Hash, color: 'text-orange-400', data: checkResult.duplicateOrder },
           { key: 'missingSize', title: '尺寸缺失', icon: Ruler, color: 'text-yellow-400', data: checkResult.missingSize },
           { key: 'missingRisk', title: '风险未填', icon: FileWarning, color: 'text-blue-400', data: checkResult.missingRisk },
+          { key: 'missingExpectedArrival', title: '预计到场时间缺失', icon: Clock, color: 'text-purple-400', data: checkResult.missingExpectedArrival },
+          { key: 'overdueNotArrived', title: '已逾期未到场', icon: Truck, color: 'text-red-400', data: checkResult.overdueNotArrived },
         ]"
         :key="section.key"
         class="rounded-lg border border-dark-700 overflow-hidden"
       >
         <button
-          @click="toggleSection(section.key as keyof typeof expandedSections)"
+          @click="toggleSection(section.key as SectionKey)"
           class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-750 hover:bg-dark-700 transition-colors"
         >
           <div class="flex items-center gap-2">
@@ -111,14 +88,14 @@ function handleItemClick(material: Material) {
           <div class="flex items-center gap-2">
             <span class="text-xs text-dark-400">{{ section.data.length }} 项</span>
             <ChevronUp
-              v-if="expandedSections[section.key as keyof typeof expandedSections]"
+              v-if="expandedSections[section.key as SectionKey]"
               class="w-4 h-4 text-dark-400"
             />
             <ChevronDown v-else class="w-4 h-4 text-dark-400" />
           </div>
         </button>
 
-        <div v-if="expandedSections[section.key as keyof typeof expandedSections]" class="border-t border-dark-700">
+        <div v-if="expandedSections[section.key as SectionKey]" class="border-t border-dark-700">
           <div v-if="section.data.length === 0" class="px-3 py-4 text-center text-xs text-dark-500">
             暂无异常
           </div>
@@ -133,6 +110,7 @@ function handleItemClick(material: Material) {
               <p class="text-xs text-dark-500">
                 <span v-if="item.theme">{{ item.theme }} · </span>
                 <span v-if="item.area">{{ item.area }} · </span>
+                <span v-if="item.arrivalBatch">批次 {{ item.arrivalBatch }} · </span>
                 顺序 {{ item.order }}
               </p>
             </button>

@@ -4,7 +4,14 @@ import { ArrowLeft, Download, Printer, CheckCircle2, Circle } from "lucide-vue-n
 import { useRouter } from "vue-router";
 import { useMaterials } from "@/composables/useMaterials";
 import { useExport } from "@/composables/useExport";
-import { STATUS_LABELS } from "@/types";
+import {
+  STATUS_LABELS,
+  ARRIVAL_STATUS_LABELS,
+  ARRIVAL_STATUS_BG_COLORS,
+  ARRIVAL_STATUS_TEXT_COLORS,
+  getArrivalStatus,
+  formatTimestamp,
+} from "@/types";
 import type { Material } from "@/types";
 
 const router = useRouter();
@@ -118,7 +125,7 @@ function goBack() {
     </header>
 
     <main class="p-6 print:p-0 print:bg-white print:text-black">
-      <div class="max-w-5xl mx-auto">
+      <div class="max-w-6xl mx-auto">
         <div class="text-center mb-8 print:mb-6">
           <h1 class="text-2xl font-serif font-bold mb-2 print:text-2xl">品牌快闪桌面陈列物料现场复核表</h1>
           <p class="text-dark-400 print:text-gray-500 text-sm">
@@ -150,11 +157,15 @@ function goBack() {
                     <tr class="border-b border-dark-700 print:border-gray-300">
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-10">序号</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500">物料名称</th>
-                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-20">数量</th>
-                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-32">尺寸</th>
-                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-24">状态</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-16">数量</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-28">尺寸</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-20">状态</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-20">到场批次</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-24">到场状态</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-36">预计到场</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-36">实际到场</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-24">风险说明</th>
-                      <th class="py-2 px-3 text-center text-xs font-medium text-dark-400 print:text-gray-500 w-20">复核</th>
+                      <th class="py-2 px-3 text-center text-xs font-medium text-dark-400 print:text-gray-500 w-16">复核</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -172,6 +183,17 @@ function goBack() {
                       <td class="py-3 px-3">
                         <span class="text-xs">{{ STATUS_LABELS[item.status] }}</span>
                       </td>
+                      <td class="py-3 px-3 text-dark-300 print:text-gray-600">{{ item.arrivalBatch || '-' }}</td>
+                      <td class="py-3 px-3">
+                        <span
+                          class="inline-flex px-2 py-0.5 rounded text-xs font-medium"
+                          :class="[ARRIVAL_STATUS_BG_COLORS[getArrivalStatus(item)], ARRIVAL_STATUS_TEXT_COLORS[getArrivalStatus(item)]]"
+                        >
+                          {{ ARRIVAL_STATUS_LABELS[getArrivalStatus(item)] }}
+                        </span>
+                      </td>
+                      <td class="py-3 px-3 text-xs text-dark-300 print:text-gray-600">{{ formatTimestamp(item.expectedArrivalTime) }}</td>
+                      <td class="py-3 px-3 text-xs text-dark-300 print:text-gray-600">{{ formatTimestamp(item.actualArrivalTime) }}</td>
                       <td class="py-3 px-3 text-dark-400 print:text-gray-500 text-xs max-w-xs truncate" :title="item.risk">
                         {{ item.risk || '-' }}
                       </td>
@@ -222,8 +244,8 @@ function goBack() {
 <style scoped>
 @media print {
   @page {
-    size: A4;
-    margin: 20mm;
+    size: A4 landscape;
+    margin: 15mm;
   }
 }
 </style>

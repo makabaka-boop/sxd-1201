@@ -1,5 +1,5 @@
 import type { Material } from "@/types";
-import { STATUS_LABELS } from "@/types";
+import { STATUS_LABELS, ARRIVAL_STATUS_LABELS, getArrivalStatus, formatTimestamp } from "@/types";
 
 export function useExport() {
   function materialsToCSV(materials: Material[]): string {
@@ -12,6 +12,11 @@ export function useExport() {
       "摆放顺序",
       "风险说明",
       "复核状态",
+      "到场批次",
+      "预计到场时间",
+      "实际到场时间",
+      "到场状态",
+      "到场备注",
       "创建时间",
       "更新时间",
     ];
@@ -25,6 +30,11 @@ export function useExport() {
       m.order.toString(),
       m.risk,
       STATUS_LABELS[m.status] || m.status,
+      m.arrivalBatch,
+      formatTimestamp(m.expectedArrivalTime),
+      formatTimestamp(m.actualArrivalTime),
+      ARRIVAL_STATUS_LABELS[getArrivalStatus(m)],
+      m.arrivalRemark,
       new Date(m.createdAt).toLocaleString("zh-CN"),
       new Date(m.updatedAt).toLocaleString("zh-CN"),
     ]);
@@ -75,6 +85,11 @@ export function useExport() {
       "尺寸",
       "状态",
       "风险说明",
+      "到场批次",
+      "预计到场时间",
+      "实际到场时间",
+      "到场状态",
+      "到场备注",
       "复核结果",
       "备注",
     ];
@@ -94,6 +109,11 @@ export function useExport() {
       m.size,
       STATUS_LABELS[m.status] || m.status,
       m.risk,
+      m.arrivalBatch,
+      formatTimestamp(m.expectedArrivalTime),
+      formatTimestamp(m.actualArrivalTime),
+      ARRIVAL_STATUS_LABELS[getArrivalStatus(m)],
+      m.arrivalRemark,
       "",
       "",
     ]);

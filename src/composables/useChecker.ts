@@ -44,11 +44,27 @@ export function useChecker() {
     return materials.value.filter((m: Material) => !m.risk || m.risk.trim() === "");
   });
 
+  const missingExpectedArrival = computed(() => {
+    return materials.value.filter((m: Material) => !m.expectedArrivalTime);
+  });
+
+  const overdueNotArrived = computed(() => {
+    const now = Date.now();
+    return materials.value.filter(
+      (m: Material) =>
+        m.expectedArrivalTime &&
+        !m.actualArrivalTime &&
+        m.expectedArrivalTime < now
+    );
+  });
+
   const checkResult = computed<CheckResult>(() => ({
     zeroQuantity: zeroQuantity.value,
     duplicateOrder: duplicateOrder.value,
     missingSize: missingSize.value,
     missingRisk: missingRisk.value,
+    missingExpectedArrival: missingExpectedArrival.value,
+    overdueNotArrived: overdueNotArrived.value,
   }));
 
   const totalIssues = computed(() => {
@@ -56,7 +72,9 @@ export function useChecker() {
       zeroQuantity.value.length +
       duplicateOrder.value.length +
       missingSize.value.length +
-      missingRisk.value.length
+      missingRisk.value.length +
+      missingExpectedArrival.value.length +
+      overdueNotArrived.value.length
     );
   });
 
@@ -65,7 +83,9 @@ export function useChecker() {
       zeroQuantity.value.some((m) => m.id === materialId) ||
       duplicateOrder.value.some((m) => m.id === materialId) ||
       missingSize.value.some((m) => m.id === materialId) ||
-      missingRisk.value.some((m) => m.id === materialId)
+      missingRisk.value.some((m) => m.id === materialId) ||
+      missingExpectedArrival.value.some((m) => m.id === materialId) ||
+      overdueNotArrived.value.some((m) => m.id === materialId)
     );
   }
 
@@ -83,6 +103,12 @@ export function useChecker() {
     if (missingRisk.value.some((m) => m.id === materialId)) {
       issues.push("风险未填");
     }
+    if (missingExpectedArrival.value.some((m) => m.id === materialId)) {
+      issues.push("预计到场时间缺失");
+    }
+    if (overdueNotArrived.value.some((m) => m.id === materialId)) {
+      issues.push("已逾期未到场");
+    }
     return issues;
   }
 
@@ -92,6 +118,8 @@ export function useChecker() {
     duplicateOrder,
     missingSize,
     missingRisk,
+    missingExpectedArrival,
+    overdueNotArrived,
     totalIssues,
     hasIssue,
     getMaterialIssues,

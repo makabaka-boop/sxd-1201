@@ -15,7 +15,7 @@ const emit = defineEmits<{
   (e: "saved"): void;
 }>();
 
-const { addMaterial, updateMaterial, themes, areas } = useMaterials();
+const { addMaterial, updateMaterial, themes, areas, arrivalBatches } = useMaterials();
 
 const form = ref({
   name: "",
@@ -26,12 +26,39 @@ const form = ref({
   order: 1,
   risk: "",
   status: "pending-prep" as MaterialStatus,
+  arrivalBatch: "",
+  expectedArrivalTime: null as number | null,
+  actualArrivalTime: null as number | null,
+  arrivalRemark: "",
 });
 
 const isEdit = computed(() => !!props.material);
 const title = computed(() => (isEdit.value ? "编辑物料" : "新增物料"));
 
 const statusOptions: MaterialStatus[] = ["pending-prep", "pending-review", "ready", "hold"];
+
+function tsToDatetimeLocal(ts: number | null): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function datetimeLocalToTs(val: string): number | null {
+  if (!val) return null;
+  return new Date(val).getTime();
+}
+
+const expectedArrivalLocal = ref("");
+const actualArrivalLocal = ref("");
+
+watch(expectedArrivalLocal, (val) => {
+  form.value.expectedArrivalTime = datetimeLocalToTs(val);
+});
+
+watch(actualArrivalLocal, (val) => {
+  form.value.actualArrivalTime = datetimeLocalToTs(val);
+});
 
 watch(
   () => props.visible,
@@ -46,7 +73,13 @@ watch(
         order: props.material.order,
         risk: props.material.risk,
         status: props.material.status,
+        arrivalBatch: props.material.arrivalBatch || "",
+        expectedArrivalTime: props.material.expectedArrivalTime ?? null,
+        actualArrivalTime: props.material.actualArrivalTime ?? null,
+        arrivalRemark: props.material.arrivalRemark || "",
       };
+      expectedArrivalLocal.value = tsToDatetimeLocal(props.material.expectedArrivalTime);
+      actualArrivalLocal.value = tsToDatetimeLocal(props.material.actualArrivalTime);
     } else if (val) {
       form.value = {
         name: "",
@@ -57,7 +90,13 @@ watch(
         order: 1,
         risk: "",
         status: "pending-prep",
+        arrivalBatch: "",
+        expectedArrivalTime: null,
+        actualArrivalTime: null,
+        arrivalRemark: "",
       };
+      expectedArrivalLocal.value = "";
+      actualArrivalLocal.value = "";
     }
   }
 );
@@ -213,6 +252,57 @@ function handleClose() {
                 placeholder="请描述该物料的摆放风险、注意事项等..."
                 class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors resize-none"
               ></textarea>
+            </div>
+
+            <div class="pt-2 border-t border-dark-700">
+              <div class="text-sm font-medium text-primary-400 mb-3">到场信息</div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm text-dark-300 mb-1.5">到场批次</label>
+                  <input
+                    v-model="form.arrivalBatch"
+                    type="text"
+                    list="arrival-batch-list"
+                    placeholder="例如：BATCH-001"
+                    class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors"
+                  />
+                  <datalist id="arrival-batch-list">
+                    <option v-for="batch in arrivalBatches" :key="batch" :value="batch">
+                      {{ batch }}
+                    </option>
+                  </datalist>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm text-dark-300 mb-1.5">预计到场时间</label>
+                    <input
+                      v-model="expectedArrivalLocal"
+                      type="datetime-local"
+                      class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-dark-300 mb-1.5">实际到场时间</label>
+                    <input
+                      v-model="actualArrivalLocal"
+                      type="datetime-local"
+                      class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm text-dark-300 mb-1.5">到场备注</label>
+                  <textarea
+                    v-model="form.arrivalRemark"
+                    rows="2"
+                    placeholder="请填写到场相关备注，如物流状态、包装情况等..."
+                    class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors resize-none"
+                  ></textarea>
+                </div>
+              </div>
             </div>
           </div>
 

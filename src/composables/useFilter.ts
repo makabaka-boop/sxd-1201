@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
-import type { Material, FilterState, MaterialStatus } from "@/types";
+import type { Material, FilterState, MaterialStatus, ArrivalStatus } from "@/types";
+import { getArrivalStatus } from "@/types";
 import { useMaterials } from "./useMaterials";
 
 export function useFilter() {
@@ -11,6 +12,8 @@ export function useFilter() {
     statuses: [],
     quantityMin: null,
     quantityMax: null,
+    arrivalBatch: "",
+    arrivalStatuses: [],
   });
 
   const filteredMaterials = computed(() => {
@@ -38,6 +41,15 @@ export function useFilter() {
         m.quantity > filter.value.quantityMax
       ) {
         return false;
+      }
+      if (filter.value.arrivalBatch && m.arrivalBatch !== filter.value.arrivalBatch) {
+        return false;
+      }
+      if (filter.value.arrivalStatuses.length > 0) {
+        const arrivalStatus = getArrivalStatus(m);
+        if (!filter.value.arrivalStatuses.includes(arrivalStatus)) {
+          return false;
+        }
       }
       return true;
     });
@@ -68,6 +80,19 @@ export function useFilter() {
     filter.value.quantityMax = value;
   }
 
+  function setArrivalBatch(batch: string) {
+    filter.value.arrivalBatch = batch;
+  }
+
+  function toggleArrivalStatus(status: ArrivalStatus) {
+    const index = filter.value.arrivalStatuses.indexOf(status);
+    if (index === -1) {
+      filter.value.arrivalStatuses.push(status);
+    } else {
+      filter.value.arrivalStatuses.splice(index, 1);
+    }
+  }
+
   function clearFilters() {
     filter.value = {
       theme: "",
@@ -75,6 +100,8 @@ export function useFilter() {
       statuses: [],
       quantityMin: null,
       quantityMax: null,
+      arrivalBatch: "",
+      arrivalStatuses: [],
     };
   }
 
@@ -84,7 +111,9 @@ export function useFilter() {
       filter.value.area !== "" ||
       filter.value.statuses.length > 0 ||
       filter.value.quantityMin !== null ||
-      filter.value.quantityMax !== null
+      filter.value.quantityMax !== null ||
+      filter.value.arrivalBatch !== "" ||
+      filter.value.arrivalStatuses.length > 0
     );
   }
 
@@ -96,6 +125,8 @@ export function useFilter() {
     toggleStatus,
     setQuantityMin,
     setQuantityMax,
+    setArrivalBatch,
+    toggleArrivalStatus,
     clearFilters,
     hasActiveFilters,
   };
