@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { X } from "lucide-vue-next";
+import { X, AlertTriangle, UserCog, Clock } from "lucide-vue-next";
 import type { Material, MaterialStatus } from "@/types";
-import { STATUS_LABELS } from "@/types";
+import { STATUS_LABELS, getAbnormalTypes, ABNORMAL_TYPE_LABELS, hasAbnormal } from "@/types";
 import { useMaterials } from "@/composables/useMaterials";
 
 const props = defineProps<{
@@ -33,10 +33,26 @@ const form = ref({
   receiver: "",
   arrivalRemark: "",
   abnormalRemark: "",
+  abnormalHandler: "",
+  expectedResolutionTime: null as number | null,
 });
 
 const isEdit = computed(() => !!props.material);
 const title = computed(() => (isEdit.value ? "编辑物料" : "新增物料"));
+
+const currentAbnormalTypes = computed(() => {
+  if (props.material) {
+    return getAbnormalTypes(props.material);
+  }
+  return [];
+});
+
+const showAbnormalSection = computed(() => {
+  if (isEdit.value && props.material) {
+    return hasAbnormal(props.material) || form.value.abnormalRemark !== "" || form.value.abnormalHandler !== "" || form.value.expectedResolutionTime !== null;
+  }
+  return form.value.abnormalRemark !== "" || form.value.abnormalHandler !== "" || form.value.expectedResolutionTime !== null;
+});
 
 const statusOptions: MaterialStatus[] = ["pending-prep", "pending-review", "ready", "hold"];
 
@@ -54,6 +70,7 @@ function datetimeLocalToTs(val: string): number | null {
 
 const expectedArrivalLocal = ref("");
 const actualArrivalLocal = ref("");
+const expectedResolutionLocal = ref("");
 
 watch(expectedArrivalLocal, (val) => {
   form.value.expectedArrivalTime = datetimeLocalToTs(val);
@@ -61,6 +78,10 @@ watch(expectedArrivalLocal, (val) => {
 
 watch(actualArrivalLocal, (val) => {
   form.value.actualArrivalTime = datetimeLocalToTs(val);
+});
+
+watch(expectedResolutionLocal, (val) => {
+  form.value.expectedResolutionTime = datetimeLocalToTs(val);
 });
 
 watch(
@@ -83,9 +104,12 @@ watch(
         receiver: (props.material as any).receiver || "",
         arrivalRemark: props.material.arrivalRemark || "",
         abnormalRemark: (props.material as any).abnormalRemark || "",
+        abnormalHandler: props.material.abnormalHandler || "",
+        expectedResolutionTime: props.material.expectedResolutionTime ?? null,
       };
       expectedArrivalLocal.value = tsToDatetimeLocal(props.material.expectedArrivalTime);
       actualArrivalLocal.value = tsToDatetimeLocal(props.material.actualArrivalTime);
+      expectedResolutionLocal.value = tsToDatetimeLocal(props.material.expectedResolutionTime);
     } else if (val) {
       form.value = {
         name: "",
@@ -103,9 +127,12 @@ watch(
         receiver: "",
         arrivalRemark: "",
         abnormalRemark: "",
+        abnormalHandler: "",
+        expectedResolutionTime: null,
       };
       expectedArrivalLocal.value = "";
       actualArrivalLocal.value = "";
+      expectedResolutionLocal.value = "";
     }
   }
 );
@@ -334,14 +361,72 @@ function handleClose() {
                   ></textarea>
                 </div>
 
-                <div>
-                  <label class="block text-sm text-dark-300 mb-1.5">异常说明</label>
-                  <textarea
-                    v-model="form.abnormalRemark"
-                    rows="2"
-                    placeholder="如有异常，请描述异常情况，如数量短缺原因、逾期原因等..."
-                    class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors resize-none"
-                  ></textarea>
+                <div
+                  v-if="showAbnormalSection"
+                  class="pt-3 mt-3 border-t border-dark-700"
+                >
+                  <div class="mb-3">
+                    <div class="text-sm font-medium text-orange-400 mb-2 flex items-center gap-1.5">
+                      <AlertTriangle class="w-4 h-4" />
+                      <span>异常处理闭环</span>
+                    </div>
+                    <div v-if="isEdit && currentAbnormalTypes.length > 0" class="mb-3 flex flex-wrap gap-1">
+                      <span
+                        v-for="type in currentAbnormalTypes"
+                        :key="type"
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                      >
+                        {{ ABNORMAL_TYPE_LABELS[type] }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-sm text-dark-300 mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                          <AlertTriangle class="w-4 h-4 text-orange-400" />
+                          <span class="text-orange-400">异常说明</span>
+                        </div>
+                      </label>
+                      <textarea
+                        v-model="form.abnormalRemark"
+                        rows="2"
+                        placeholder="如有异常，请描述异常情况，如数量短缺原因、逾期原因等..."
+                        class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                      ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm text-dark-300 mb-1.5">
+                          <div class="flex items-center gap-1.5">
+                            <UserCog class="w-4 h-4 text-orange-400" />
+                            <span class="text-orange-400">处理负责人</span>
+                          </div>
+                        </label>
+                        <input
+                          v-model="form.abnormalHandler"
+                          type="text"
+                          placeholder="负责处理异常的人员"
+                          class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-orange-500 transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-sm text-dark-300 mb-1.5">
+                          <div class="flex items-center gap-1.5">
+                            <Clock class="w-4 h-4 text-orange-400" />
+                            <span class="text-orange-400">预计补救时间</span>
+                          </div>
+                        </label>
+                        <input
+                          v-model="expectedResolutionLocal"
+                          type="datetime-local"
+                          class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white focus:outline-none focus:border-orange-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

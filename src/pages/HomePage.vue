@@ -69,6 +69,10 @@ function handleModalSaved() {
 
 function handleSignSaved() {
 }
+
+function handleScrollTo(id: string) {
+  materialListRef.value?.scrollToItem(id);
+}
 </script>
 
 <template>
@@ -87,7 +91,7 @@ function handleSignSaved() {
         @selection-change="handleSelectionChange"
       />
 
-      <CheckPanel @edit="openEditModal" />
+      <CheckPanel @edit="openEditModal" @scroll-to="handleScrollTo" />
     </div>
 
     <BatchBar

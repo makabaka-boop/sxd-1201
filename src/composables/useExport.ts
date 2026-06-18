@@ -28,7 +28,10 @@ export function useExport() {
       "签收人",
       "到场备注",
       "异常类型",
+      "实到数量",
       "异常说明",
+      "处理负责人",
+      "预计补救时间",
       "创建时间",
       "更新时间",
     ];
@@ -59,7 +62,10 @@ export function useExport() {
         m.receiver || "-",
         m.arrivalRemark,
         abnormalTypeStr || "正常",
+        actualQty !== null ? actualQty.toString() : "-",
         m.abnormalRemark || "-",
+        m.abnormalHandler || "-",
+        formatTimestamp(m.expectedResolutionTime),
         new Date(m.createdAt).toLocaleString("zh-CN"),
         new Date(m.updatedAt).toLocaleString("zh-CN"),
       ];
@@ -120,7 +126,10 @@ export function useExport() {
       "签收人",
       "到场备注",
       "异常类型",
+      "实到数量",
       "异常说明",
+      "处理负责人",
+      "预计补救时间",
       "复核结果",
       "备注",
     ];
@@ -157,7 +166,10 @@ export function useExport() {
         m.receiver || "-",
         m.arrivalRemark,
         abnormalTypeStr || "正常",
+        actualQty !== null ? actualQty.toString() : "-",
         m.abnormalRemark || "-",
+        m.abnormalHandler || "-",
+        formatTimestamp(m.expectedResolutionTime),
         "",
         "",
       ];

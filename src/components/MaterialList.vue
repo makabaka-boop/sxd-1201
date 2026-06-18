@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import draggable from "vuedraggable";
 import MaterialCard from "./MaterialCard.vue";
 import { useFilter } from "@/composables/useFilter";
@@ -19,6 +19,8 @@ const { filteredMaterials } = useFilter();
 const { reorderMaterials } = useMaterials();
 
 const selectedIds = ref<string[]>([]);
+const listContainer = ref<HTMLElement | null>(null);
+const cardRefs = ref<Map<string, HTMLElement>>(new Map());
 
 const dragList = computed({
   get: () => filteredMaterials.value,
@@ -55,15 +57,39 @@ function getSelectedIds(): string[] {
   return selectedIds.value;
 }
 
+function setCardRef(id: string, el: any) {
+  if (el) {
+    cardRefs.value.set(id, el.$el as HTMLElement);
+  }
+}
+
+async function scrollToItem(id: string) {
+  await nextTick();
+  const cardEl = cardRefs.value.get(id);
+  if (cardEl && listContainer.value) {
+    cardEl.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    setTimeout(() => {
+      cardEl.classList.add("ring-2", "ring-primary-500", "ring-offset-2", "ring-offset-dark-900");
+      setTimeout(() => {
+        cardEl.classList.remove("ring-2", "ring-primary-500", "ring-offset-2", "ring-offset-dark-900");
+      }, 2000);
+    }, 300);
+  }
+}
+
 defineExpose({
   clearSelection,
   selectAll,
   getSelectedIds,
+  scrollToItem,
 });
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto p-4">
+  <div ref="listContainer" class="flex-1 overflow-y-auto p-4">
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-3">
         <h2 class="text-sm font-medium text-white">物料列表</h2>
@@ -103,6 +129,7 @@ defineExpose({
       >
         <template #item="{ element }">
           <MaterialCard
+            :ref="(el: any) => setCardRef(element.id, el)"
             :material="element"
             :selected="isSelected(element.id)"
             @select="toggleSelect(element.id)"

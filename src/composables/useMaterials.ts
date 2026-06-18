@@ -30,6 +30,8 @@ function getMockData(): Material[] {
       receiver: "张三",
       arrivalRemark: "物流正常，包装完好",
       abnormalRemark: "",
+      abnormalHandler: "",
+      expectedResolutionTime: null,
     },
     {
       id: "mock-2",
@@ -50,6 +52,8 @@ function getMockData(): Material[] {
       receiver: "",
       arrivalRemark: "",
       abnormalRemark: "",
+      abnormalHandler: "",
+      expectedResolutionTime: null,
     },
     {
       id: "mock-3",
@@ -69,7 +73,9 @@ function getMockData(): Material[] {
       actualQuantity: null,
       receiver: "",
       arrivalRemark: "供应商延迟发货",
-      abnormalRemark: "",
+      abnormalRemark: "供应商通知原材料短缺，预计延期3天",
+      abnormalHandler: "赵经理",
+      expectedResolutionTime: now + day,
     },
     {
       id: "mock-4",
@@ -90,6 +96,8 @@ function getMockData(): Material[] {
       receiver: "",
       arrivalRemark: "",
       abnormalRemark: "",
+      abnormalHandler: "",
+      expectedResolutionTime: null,
     },
     {
       id: "mock-5",
@@ -110,6 +118,8 @@ function getMockData(): Material[] {
       receiver: "李四",
       arrivalRemark: "",
       abnormalRemark: "少2张，供应商补发中",
+      abnormalHandler: "孙主管",
+      expectedResolutionTime: now + 2 * day,
     },
     {
       id: "mock-6",
@@ -130,6 +140,8 @@ function getMockData(): Material[] {
       receiver: "",
       arrivalRemark: "需现场签收",
       abnormalRemark: "",
+      abnormalHandler: "",
+      expectedResolutionTime: null,
     },
     {
       id: "mock-7",
@@ -150,6 +162,8 @@ function getMockData(): Material[] {
       receiver: "",
       arrivalRemark: "",
       abnormalRemark: "",
+      abnormalHandler: "",
+      expectedResolutionTime: null,
     },
     {
       id: "mock-8",
@@ -170,6 +184,8 @@ function getMockData(): Material[] {
       receiver: "王五",
       arrivalRemark: "",
       abnormalRemark: "",
+      abnormalHandler: "",
+      expectedResolutionTime: null,
     },
   ];
 }
@@ -197,6 +213,9 @@ function normalizeMaterial(raw: any): Material {
     receiver: raw.receiver || "",
     arrivalRemark: raw.arrivalRemark || "",
     abnormalRemark: raw.abnormalRemark || "",
+    abnormalHandler: raw.abnormalHandler || "",
+    expectedResolutionTime:
+      typeof raw.expectedResolutionTime === "number" ? raw.expectedResolutionTime : null,
   };
 }
 
@@ -278,6 +297,8 @@ export function useMaterials() {
       receiver: data.receiver || "",
       arrivalRemark: data.arrivalRemark || "",
       abnormalRemark: data.abnormalRemark || "",
+      abnormalHandler: data.abnormalHandler || "",
+      expectedResolutionTime: data.expectedResolutionTime ?? null,
     };
     materials.value.push(newMaterial);
     return newMaterial;
@@ -334,6 +355,8 @@ export function useMaterials() {
       receiver?: string;
       arrivalRemark?: string;
       abnormalRemark?: string;
+      abnormalHandler?: string;
+      expectedResolutionTime?: number | null;
     }
   ) {
     const now = Date.now();
@@ -354,6 +377,12 @@ export function useMaterials() {
         }
         if (data.abnormalRemark !== undefined) {
           mat.abnormalRemark = data.abnormalRemark;
+        }
+        if (data.abnormalHandler !== undefined) {
+          mat.abnormalHandler = data.abnormalHandler;
+        }
+        if (data.expectedResolutionTime !== undefined) {
+          mat.expectedResolutionTime = data.expectedResolutionTime;
         }
         mat.updatedAt = now;
       }

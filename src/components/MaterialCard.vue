@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical, Edit2, Trash2, AlertCircle, AlertTriangle, Truck, Package, User, CheckSquare } from "lucide-vue-next";
+import { GripVertical, Edit2, Trash2, AlertCircle, AlertTriangle, Truck, Package, User, CheckSquare, UserCog, Clock } from "lucide-vue-next";
 import type { Material } from "@/types";
 import {
   STATUS_LABELS,
@@ -183,6 +183,16 @@ const quantityDiff = computed(() => {
         <div v-if="material.abnormalRemark" class="text-xs text-orange-400 mt-1 flex items-start gap-1">
           <AlertTriangle class="w-3 h-3 mt-0.5 flex-shrink-0" />
           <span class="line-clamp-1">异常：{{ material.abnormalRemark }}</span>
+        </div>
+
+        <div v-if="material.abnormalHandler" class="text-xs text-blue-400 mt-1 flex items-start gap-1">
+          <UserCog class="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span class="line-clamp-1">负责人：{{ material.abnormalHandler }}</span>
+        </div>
+
+        <div v-if="material.expectedResolutionTime" class="text-xs text-purple-400 mt-1 flex items-start gap-1">
+          <Clock class="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span class="line-clamp-1">预计补救：{{ formatTimestamp(material.expectedResolutionTime) }}</span>
         </div>
 
         <div v-if="hasAbnormal" class="mt-2 flex flex-wrap gap-1">

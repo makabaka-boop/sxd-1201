@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { ArrowLeft, Download, Printer, CheckCircle2, Circle, AlertTriangle, User, X, Filter } from "lucide-vue-next";
+import { ArrowLeft, Download, Printer, CheckCircle2, Circle, AlertTriangle, User, X, Filter, UserCog, Clock } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { useMaterials } from "@/composables/useMaterials";
 import { useExport } from "@/composables/useExport";
@@ -265,7 +265,7 @@ function goBack() {
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-36">预计到场</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-36">实际到场</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-24">风险说明</th>
-                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-32">异常说明</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-40">异常处理</th>
                       <th class="py-2 px-3 text-center text-xs font-medium text-dark-400 print:text-gray-500 w-16">复核</th>
                     </tr>
                   </thead>
@@ -324,7 +324,7 @@ function goBack() {
                         {{ item.risk || '-' }}
                       </td>
                       <td class="py-3 px-3">
-                        <div class="space-y-1">
+                        <div class="space-y-1.5 max-w-xs">
                           <div
                             v-if="getAbnormalTypes(item).length > 0"
                             class="flex flex-wrap gap-1"
@@ -340,12 +340,32 @@ function goBack() {
                           </div>
                           <p
                             v-if="item.abnormalRemark"
-                            class="text-xs text-orange-400 line-clamp-2"
+                            class="text-xs text-orange-400 line-clamp-2 flex items-start gap-1"
                             :title="item.abnormalRemark"
                           >
-                            {{ item.abnormalRemark }}
+                            <AlertTriangle class="w-3 h-3 mt-0.5 flex-shrink-0" />
+                            <span>{{ item.abnormalRemark }}</span>
                           </p>
-                          <p v-else-if="getAbnormalTypes(item).length === 0" class="text-xs text-dark-500">
+                          <p
+                            v-if="item.abnormalHandler"
+                            class="text-xs text-blue-400 line-clamp-1 flex items-start gap-1"
+                            :title="`处理负责人：${item.abnormalHandler}`"
+                          >
+                            <UserCog class="w-3 h-3 mt-0.5 flex-shrink-0" />
+                            <span>{{ item.abnormalHandler }}</span>
+                          </p>
+                          <p
+                            v-if="item.expectedResolutionTime"
+                            class="text-xs text-purple-400 line-clamp-1 flex items-start gap-1"
+                            :title="`预计补救时间：${formatTimestamp(item.expectedResolutionTime)}`"
+                          >
+                            <Clock class="w-3 h-3 mt-0.5 flex-shrink-0" />
+                            <span>{{ formatTimestamp(item.expectedResolutionTime) }}</span>
+                          </p>
+                          <p
+                            v-if="getAbnormalTypes(item).length === 0 && !item.abnormalRemark && !item.abnormalHandler && !item.expectedResolutionTime"
+                            class="text-xs text-dark-500"
+                          >
                             -
                           </p>
                         </div>

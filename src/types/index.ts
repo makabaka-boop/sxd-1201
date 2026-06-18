@@ -35,6 +35,8 @@ export interface Material {
   receiver: string;
   arrivalRemark: string;
   abnormalRemark: string;
+  abnormalHandler: string;
+  expectedResolutionTime: number | null;
 }
 
 export interface FilterState {

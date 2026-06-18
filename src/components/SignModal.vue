@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { X, Package, User, ClipboardList, AlertTriangle } from "lucide-vue-next";
+import { X, Package, User, ClipboardList, AlertTriangle, UserCog, Clock } from "lucide-vue-next";
 import type { Material } from "@/types";
 import { useMaterials } from "@/composables/useMaterials";
-import { formatTimestamp } from "@/types";
+import { formatTimestamp, getAbnormalTypes, hasAbnormal } from "@/types";
 
 const props = defineProps<{
   visible: boolean;
@@ -26,9 +26,12 @@ const form = ref({
   receiver: "",
   arrivalRemark: "",
   abnormalRemark: "",
+  abnormalHandler: "",
+  expectedResolutionTime: null as number | null,
 });
 
 const actualArrivalLocal = ref("");
+const expectedResolutionLocal = ref("");
 
 function tsToDatetimeLocal(ts: number | null): string {
   if (!ts) return "";
@@ -46,6 +49,10 @@ watch(actualArrivalLocal, (val) => {
   form.value.actualArrivalTime = datetimeLocalToTs(val);
 });
 
+watch(expectedResolutionLocal, (val) => {
+  form.value.expectedResolutionTime = datetimeLocalToTs(val);
+});
+
 watch(
   () => props.visible,
   (val) => {
@@ -58,8 +65,11 @@ watch(
           receiver: m.receiver || "",
           arrivalRemark: m.arrivalRemark || "",
           abnormalRemark: m.abnormalRemark || "",
+          abnormalHandler: m.abnormalHandler || "",
+          expectedResolutionTime: m.expectedResolutionTime ?? null,
         };
         actualArrivalLocal.value = tsToDatetimeLocal(m.actualArrivalTime ?? null);
+        expectedResolutionLocal.value = tsToDatetimeLocal(m.expectedResolutionTime ?? null);
       } else {
         form.value = {
           actualArrivalTime: Date.now(),
@@ -67,8 +77,11 @@ watch(
           receiver: "",
           arrivalRemark: "",
           abnormalRemark: "",
+          abnormalHandler: "",
+          expectedResolutionTime: null,
         };
         actualArrivalLocal.value = tsToDatetimeLocal(Date.now());
+        expectedResolutionLocal.value = "";
       }
     }
   }
@@ -85,6 +98,20 @@ const hasQuantityShortage = computed(() => {
   return quantityDiff.value !== null && quantityDiff.value < 0;
 });
 
+const currentAbnormalTypes = computed(() => {
+  if (!isBatch.value) {
+    return getAbnormalTypes(props.materials[0]);
+  }
+  return [];
+});
+
+const showAbnormalSection = computed(() => {
+  if (isBatch.value) {
+    return form.value.abnormalRemark !== "" || form.value.abnormalHandler !== "" || form.value.expectedResolutionTime !== null;
+  }
+  return hasQuantityShortage.value || hasAbnormal(props.materials[0]) || form.value.abnormalRemark !== "" || form.value.abnormalHandler !== "" || form.value.expectedResolutionTime !== null;
+});
+
 function handleSign() {
   const ids = props.materials.map((m) => m.id);
   const data: any = {
@@ -92,6 +119,8 @@ function handleSign() {
     receiver: form.value.receiver.trim(),
     arrivalRemark: form.value.arrivalRemark.trim(),
     abnormalRemark: form.value.abnormalRemark.trim(),
+    abnormalHandler: form.value.abnormalHandler.trim(),
+    expectedResolutionTime: form.value.expectedResolutionTime,
   };
   if (!isBatch.value && form.value.actualQuantity !== null) {
     data.actualQuantity = form.value.actualQuantity;
@@ -232,21 +261,73 @@ function handleActualQuantityInput(event: Event) {
             </div>
 
             <div
-              v-if="hasQuantityShortage || form.abnormalRemark"
+              v-if="showAbnormalSection"
               class="pt-3 border-t border-dark-700"
             >
-              <label class="block text-sm text-dark-300 mb-1.5">
-                <div class="flex items-center gap-1.5">
-                  <AlertTriangle class="w-4 h-4 text-orange-400" />
-                  <span class="text-orange-400">异常说明</span>
+              <div class="mb-3">
+                <div class="text-sm font-medium text-orange-400 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle class="w-4 h-4" />
+                  <span>异常处理闭环</span>
                 </div>
-              </label>
-              <textarea
-                v-model="form.abnormalRemark"
-                rows="3"
-                placeholder="请描述异常情况，如数量短缺原因、逾期原因等..."
-                class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
-              ></textarea>
+                <div v-if="!isBatch && currentAbnormalTypes.length > 0" class="mb-3 flex flex-wrap gap-1">
+                  <span
+                    v-for="type in currentAbnormalTypes"
+                    :key="type"
+                    class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                  >
+                    {{ type === 'quantity-shortage' ? '数量短缺' : type === 'overdue' ? '已逾期' : '无预计到场时间' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm text-dark-300 mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                      <AlertTriangle class="w-4 h-4 text-orange-400" />
+                      <span class="text-orange-400">异常说明</span>
+                    </div>
+                  </label>
+                  <textarea
+                    v-model="form.abnormalRemark"
+                    rows="3"
+                    placeholder="请描述异常情况，如数量短缺原因、逾期原因等..."
+                    class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-sm text-dark-300 mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                      <UserCog class="w-4 h-4 text-orange-400" />
+                      <span class="text-orange-400">处理负责人</span>
+                    </div>
+                  </label>
+                  <input
+                    v-model="form.abnormalHandler"
+                    type="text"
+                    placeholder="请输入负责处理该异常的人员姓名"
+                    class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-orange-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm text-dark-300 mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                      <Clock class="w-4 h-4 text-orange-400" />
+                      <span class="text-orange-400">预计补救完成时间</span>
+                    </div>
+                  </label>
+                  <input
+                    v-model="expectedResolutionLocal"
+                    type="datetime-local"
+                    class="w-full px-3 py-2.5 bg-dark-700 border border-orange-500/30 rounded-lg text-white focus:outline-none focus:border-orange-500 transition-colors"
+                  />
+                  <p class="text-xs text-dark-500 mt-1">
+                    预计何时完成异常补救，如供应商补发、物料替换等
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
