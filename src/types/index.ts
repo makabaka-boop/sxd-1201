@@ -104,20 +104,28 @@ export const ARRIVAL_STATUS_BG_COLORS: Record<ArrivalStatus, string> = {
 };
 
 export function getArrivalStatus(material: Material): ArrivalStatus {
-  if (!material.expectedArrivalTime && !material.actualArrivalTime) {
+  const expected =
+    typeof (material as any).expectedArrivalTime === "number"
+      ? (material as any).expectedArrivalTime
+      : null;
+  const actual =
+    typeof (material as any).actualArrivalTime === "number"
+      ? (material as any).actualArrivalTime
+      : null;
+  if (!expected && !actual) {
     return "not-set";
   }
-  if (material.actualArrivalTime) {
+  if (actual) {
     return "arrived";
   }
-  if (material.expectedArrivalTime && material.expectedArrivalTime < Date.now()) {
+  if (expected && expected < Date.now()) {
     return "overdue";
   }
   return "pending";
 }
 
-export function formatTimestamp(ts: number | null): string {
-  if (!ts) return "-";
+export function formatTimestamp(ts: number | null | undefined): string {
+  if (typeof ts !== "number") return "-";
   return new Date(ts).toLocaleString("zh-CN", {
     year: "numeric",
     month: "2-digit",

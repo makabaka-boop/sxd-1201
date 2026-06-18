@@ -150,13 +150,35 @@ function getMockData(): Material[] {
   ];
 }
 
+function normalizeMaterial(raw: any): Material {
+  return {
+    id: raw.id || generateId(),
+    name: raw.name || "",
+    theme: raw.theme || "",
+    area: raw.area || "",
+    quantity: typeof raw.quantity === "number" ? raw.quantity : 0,
+    size: raw.size || "",
+    order: typeof raw.order === "number" ? raw.order : 1,
+    risk: raw.risk || "",
+    status: raw.status || "pending-prep",
+    createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
+    updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now(),
+    arrivalBatch: raw.arrivalBatch || "",
+    expectedArrivalTime:
+      typeof raw.expectedArrivalTime === "number" ? raw.expectedArrivalTime : null,
+    actualArrivalTime:
+      typeof raw.actualArrivalTime === "number" ? raw.actualArrivalTime : null,
+    arrivalRemark: raw.arrivalRemark || "",
+  };
+}
+
 function loadFromStorage(): Material[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((item) => normalizeMaterial(item));
       }
     }
   } catch (e) {

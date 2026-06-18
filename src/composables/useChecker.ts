@@ -45,17 +45,22 @@ export function useChecker() {
   });
 
   const missingExpectedArrival = computed(() => {
-    return materials.value.filter((m: Material) => !m.expectedArrivalTime);
+    return materials.value.filter(
+      (m: Material) => typeof (m as any).expectedArrivalTime !== "number"
+    );
   });
 
   const overdueNotArrived = computed(() => {
     const now = Date.now();
-    return materials.value.filter(
-      (m: Material) =>
-        m.expectedArrivalTime &&
-        !m.actualArrivalTime &&
-        m.expectedArrivalTime < now
-    );
+    return materials.value.filter((m: Material) => {
+      const expected = (m as any).expectedArrivalTime;
+      const actual = (m as any).actualArrivalTime;
+      return (
+        typeof expected === "number" &&
+        typeof actual !== "number" &&
+        expected < now
+      );
+    });
   });
 
   const checkResult = computed<CheckResult>(() => ({
