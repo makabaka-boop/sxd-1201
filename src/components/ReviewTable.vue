@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { ArrowLeft, Download, Printer, CheckCircle2, Circle, AlertTriangle, User } from "lucide-vue-next";
+import { ArrowLeft, Download, Printer, CheckCircle2, Circle, AlertTriangle, User, X, Filter } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { useMaterials } from "@/composables/useMaterials";
 import { useExport } from "@/composables/useExport";
+import { useFilter } from "@/composables/useFilter";
 import {
   STATUS_LABELS,
   ARRIVAL_STATUS_LABELS,
@@ -15,14 +16,27 @@ import {
   ABNORMAL_TYPE_LABELS,
   ABNORMAL_TYPE_BG_COLORS,
   ABNORMAL_TYPE_TEXT_COLORS,
+  ABNORMAL_TYPE_COLORS,
 } from "@/types";
 import type { Material, AbnormalType } from "@/types";
 
 const router = useRouter();
-const { materials, themes, areas } = useMaterials();
+const { materials, themes, areas, arrivalBatches } = useMaterials();
 const { exportReviewTable } = useExport();
+const {
+  filter,
+  filteredMaterials,
+  setTheme,
+  setArea,
+  setArrivalBatch,
+  toggleAbnormalType,
+  clearFilters,
+  hasActiveFilters,
+} = useFilter();
 
 const checkedItems = ref<Set<string>>(new Set());
+const showFilter = ref(false);
+const abnormalTypeOptions: AbnormalType[] = ["quantity-shortage", "overdue", "no-expected-time"];
 
 interface GroupedMaterials {
   theme: string;
@@ -42,7 +56,7 @@ const groupedMaterials = computed<GroupedMaterials[]>(() => {
     };
 
     areas.value.forEach((area) => {
-      const areaMaterials = materials.value
+      const areaMaterials = filteredMaterials.value
         .filter((m) => m.theme === theme && m.area === area)
         .sort((a, b) => a.order - b.order);
 
@@ -62,7 +76,7 @@ const groupedMaterials = computed<GroupedMaterials[]>(() => {
   return result;
 });
 
-const totalCount = computed(() => materials.value.length);
+const totalCount = computed(() => filteredMaterials.value.length);
 const checkedCount = computed(() => checkedItems.value.size);
 
 function toggleCheck(id: string) {
@@ -78,7 +92,7 @@ function isChecked(id: string): boolean {
 }
 
 function handleExport() {
-  exportReviewTable(materials.value);
+  exportReviewTable(filteredMaterials.value);
 }
 
 function handlePrint() {
@@ -111,6 +125,15 @@ function goBack() {
 
         <div class="flex items-center gap-3">
           <button
+            @click="showFilter = !showFilter"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors"
+            :class="showFilter || hasActiveFilters() ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30' : 'bg-dark-700 text-dark-200 hover:bg-dark-600'"
+          >
+            <Filter class="w-4 h-4" />
+            <span>筛选</span>
+            <span v-if="hasActiveFilters()" class="w-5 h-5 flex items-center justify-center bg-primary-500 text-dark-900 rounded-full text-xs font-bold">!</span>
+          </button>
+          <button
             @click="handlePrint"
             class="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-700 text-dark-200 hover:bg-dark-600 transition-colors text-sm"
           >
@@ -130,6 +153,77 @@ function goBack() {
 
     <main class="p-6 print:p-0 print:bg-white print:text-black">
       <div class="max-w-6xl mx-auto">
+        <Transition name="fade">
+          <div v-if="showFilter" class="mb-6 p-4 bg-dark-800 rounded-xl border border-dark-700 print:hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-white flex items-center gap-2">
+                <Filter class="w-4 h-4 text-primary-400" />
+                筛选条件
+              </h3>
+              <button
+                @click="clearFilters"
+                class="text-xs text-dark-400 hover:text-white flex items-center gap-1 transition-colors"
+              >
+                <X class="w-3 h-3" />
+                清除筛选
+              </button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label class="text-xs text-dark-400 mb-2 block">主题</label>
+                <select
+                  :value="filter.theme"
+                  @change="setTheme(($event.target as HTMLSelectElement).value)"
+                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+                >
+                  <option value="">全部主题</option>
+                  <option v-for="theme in themes" :key="theme" :value="theme">{{ theme }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-dark-400 mb-2 block">区域</label>
+                <select
+                  :value="filter.area"
+                  @change="setArea(($event.target as HTMLSelectElement).value)"
+                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+                >
+                  <option value="">全部区域</option>
+                  <option v-for="area in areas" :key="area" :value="area">{{ area }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-dark-400 mb-2 block">批次</label>
+                <select
+                  :value="filter.arrivalBatch"
+                  @change="setArrivalBatch(($event.target as HTMLSelectElement).value)"
+                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+                >
+                  <option value="">全部批次</option>
+                  <option v-for="batch in arrivalBatches" :key="batch" :value="batch">{{ batch }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-dark-400 mb-2 block">异常类型</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="type in abnormalTypeOptions"
+                    :key="type"
+                    @click="toggleAbnormalType(type)"
+                    class="px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
+                    :class="[
+                      filter.abnormalTypes.includes(type)
+                        ? `${ABNORMAL_TYPE_COLORS[type]} text-white`
+                        : 'bg-dark-700 text-dark-400 hover:bg-dark-600'
+                    ]"
+                  >
+                    {{ ABNORMAL_TYPE_LABELS[type] }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
         <div class="text-center mb-8 print:mb-6">
           <h1 class="text-2xl font-serif font-bold mb-2 print:text-2xl">品牌快闪桌面陈列物料现场复核表</h1>
           <p class="text-dark-400 print:text-gray-500 text-sm">
@@ -306,5 +400,16 @@ function goBack() {
     size: A4 landscape;
     margin: 15mm;
   }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

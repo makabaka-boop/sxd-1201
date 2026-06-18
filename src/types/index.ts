@@ -176,7 +176,7 @@ export function getAbnormalTypes(material: Material): AbnormalType[] {
   const actualQty =
     typeof material.actualQuantity === "number" ? material.actualQuantity : null;
 
-  if (!expected && !actual) {
+  if (!expected) {
     types.push("no-expected-time");
   }
 
