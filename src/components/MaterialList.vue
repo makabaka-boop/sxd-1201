@@ -11,6 +11,7 @@ const emit = defineEmits<{
   (e: "edit", material: Material): void;
   (e: "delete", id: string): void;
   (e: "add"): void;
+  (e: "sign", material: Material): void;
   (e: "selection-change", ids: string[]): void;
 }>();
 
@@ -107,6 +108,7 @@ defineExpose({
             @select="toggleSelect(element.id)"
             @edit="emit('edit', element)"
             @delete="emit('delete', element.id)"
+            @sign="emit('sign', element)"
           />
         </template>
       </draggable>

@@ -28,6 +28,7 @@ const expandedSections = ref({
   missingRisk: true,
   missingExpectedArrival: true,
   overdueNotArrived: true,
+  quantityShortage: true,
 });
 
 type SectionKey = keyof typeof expandedSections.value;
@@ -73,6 +74,7 @@ function handleItemClick(material: Material) {
           { key: 'missingRisk', title: '风险未填', icon: FileWarning, color: 'text-blue-400', data: checkResult.missingRisk },
           { key: 'missingExpectedArrival', title: '预计到场时间缺失', icon: Clock, color: 'text-purple-400', data: checkResult.missingExpectedArrival },
           { key: 'overdueNotArrived', title: '已逾期未到场', icon: Truck, color: 'text-red-400', data: checkResult.overdueNotArrived },
+          { key: 'quantityShortage', title: '数量短缺', icon: AlertCircle, color: 'text-orange-400', data: checkResult.quantityShortage },
         ]"
         :key="section.key"
         class="rounded-lg border border-dark-700 overflow-hidden"

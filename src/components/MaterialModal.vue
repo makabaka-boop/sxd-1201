@@ -29,7 +29,10 @@ const form = ref({
   arrivalBatch: "",
   expectedArrivalTime: null as number | null,
   actualArrivalTime: null as number | null,
+  actualQuantity: null as number | null,
+  receiver: "",
   arrivalRemark: "",
+  abnormalRemark: "",
 });
 
 const isEdit = computed(() => !!props.material);
@@ -76,7 +79,10 @@ watch(
         arrivalBatch: props.material.arrivalBatch || "",
         expectedArrivalTime: props.material.expectedArrivalTime ?? null,
         actualArrivalTime: props.material.actualArrivalTime ?? null,
+        actualQuantity: (props.material as any).actualQuantity ?? null,
+        receiver: (props.material as any).receiver || "",
         arrivalRemark: props.material.arrivalRemark || "",
+        abnormalRemark: (props.material as any).abnormalRemark || "",
       };
       expectedArrivalLocal.value = tsToDatetimeLocal(props.material.expectedArrivalTime);
       actualArrivalLocal.value = tsToDatetimeLocal(props.material.actualArrivalTime);
@@ -93,7 +99,10 @@ watch(
         arrivalBatch: "",
         expectedArrivalTime: null,
         actualArrivalTime: null,
+        actualQuantity: null,
+        receiver: "",
         arrivalRemark: "",
+        abnormalRemark: "",
       };
       expectedArrivalLocal.value = "";
       actualArrivalLocal.value = "";
@@ -293,12 +302,44 @@ function handleClose() {
                   </div>
                 </div>
 
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm text-dark-300 mb-1.5">实际到场数量</label>
+                    <input
+                      v-model.number="form.actualQuantity"
+                      type="number"
+                      min="0"
+                      placeholder="留空表示未签收"
+                      class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-dark-300 mb-1.5">签收人</label>
+                    <input
+                      v-model="form.receiver"
+                      type="text"
+                      placeholder="请输入签收人姓名"
+                      class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label class="block text-sm text-dark-300 mb-1.5">到场备注</label>
                   <textarea
                     v-model="form.arrivalRemark"
                     rows="2"
                     placeholder="请填写到场相关备注，如物流状态、包装情况等..."
+                    class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors resize-none"
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-sm text-dark-300 mb-1.5">异常说明</label>
+                  <textarea
+                    v-model="form.abnormalRemark"
+                    rows="2"
+                    placeholder="如有异常，请描述异常情况，如数量短缺原因、逾期原因等..."
                     class="w-full px-3 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors resize-none"
                   ></textarea>
                 </div>

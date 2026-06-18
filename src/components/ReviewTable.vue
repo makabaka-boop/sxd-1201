@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { ArrowLeft, Download, Printer, CheckCircle2, Circle } from "lucide-vue-next";
+import { ArrowLeft, Download, Printer, CheckCircle2, Circle, AlertTriangle, User } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { useMaterials } from "@/composables/useMaterials";
 import { useExport } from "@/composables/useExport";
@@ -11,8 +11,12 @@ import {
   ARRIVAL_STATUS_TEXT_COLORS,
   getArrivalStatus,
   formatTimestamp,
+  getAbnormalTypes,
+  ABNORMAL_TYPE_LABELS,
+  ABNORMAL_TYPE_BG_COLORS,
+  ABNORMAL_TYPE_TEXT_COLORS,
 } from "@/types";
-import type { Material } from "@/types";
+import type { Material, AbnormalType } from "@/types";
 
 const router = useRouter();
 const { materials, themes, areas } = useMaterials();
@@ -157,14 +161,17 @@ function goBack() {
                     <tr class="border-b border-dark-700 print:border-gray-300">
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-10">序号</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500">物料名称</th>
-                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-16">数量</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-16">计划数</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-16">实到数</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-28">尺寸</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-20">状态</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-20">到场批次</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-24">到场状态</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-20">签收人</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-36">预计到场</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-36">实际到场</th>
                       <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-24">风险说明</th>
+                      <th class="py-2 px-3 text-left text-xs font-medium text-dark-400 print:text-gray-500 w-32">异常说明</th>
                       <th class="py-2 px-3 text-center text-xs font-medium text-dark-400 print:text-gray-500 w-16">复核</th>
                     </tr>
                   </thead>
@@ -176,9 +183,27 @@ function goBack() {
                     >
                       <td class="py-3 px-3 text-dark-500 print:text-gray-400">{{ item.order }}</td>
                       <td class="py-3 px-3 font-medium">
-                        {{ item.name }}
+                        <div class="flex items-center gap-2">
+                          {{ item.name }}
+                          <span
+                            v-if="getAbnormalTypes(item).length > 0"
+                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                          >
+                            <AlertTriangle class="w-3 h-3" />
+                            异常
+                          </span>
+                        </div>
                       </td>
                       <td class="py-3 px-3">{{ item.quantity }}</td>
+                      <td class="py-3 px-3">
+                        <span
+                          v-if="typeof item.actualQuantity === 'number'"
+                          :class="item.actualQuantity < item.quantity ? 'text-orange-400' : 'text-green-400'"
+                        >
+                          {{ item.actualQuantity }}
+                        </span>
+                        <span v-else class="text-dark-500">-</span>
+                      </td>
                       <td class="py-3 px-3 text-dark-300 print:text-gray-600">{{ item.size || '-' }}</td>
                       <td class="py-3 px-3">
                         <span class="text-xs">{{ STATUS_LABELS[item.status] }}</span>
@@ -192,10 +217,44 @@ function goBack() {
                           {{ ARRIVAL_STATUS_LABELS[getArrivalStatus(item)] }}
                         </span>
                       </td>
+                      <td class="py-3 px-3">
+                        <div v-if="item.receiver" class="flex items-center gap-1 text-xs text-dark-300 print:text-gray-600">
+                          <User class="w-3 h-3" />
+                          {{ item.receiver }}
+                        </div>
+                        <span v-else class="text-dark-500">-</span>
+                      </td>
                       <td class="py-3 px-3 text-xs text-dark-300 print:text-gray-600">{{ formatTimestamp(item.expectedArrivalTime) }}</td>
                       <td class="py-3 px-3 text-xs text-dark-300 print:text-gray-600">{{ formatTimestamp(item.actualArrivalTime) }}</td>
                       <td class="py-3 px-3 text-dark-400 print:text-gray-500 text-xs max-w-xs truncate" :title="item.risk">
                         {{ item.risk || '-' }}
+                      </td>
+                      <td class="py-3 px-3">
+                        <div class="space-y-1">
+                          <div
+                            v-if="getAbnormalTypes(item).length > 0"
+                            class="flex flex-wrap gap-1"
+                          >
+                            <span
+                              v-for="type in getAbnormalTypes(item)"
+                              :key="type"
+                              class="inline-flex px-1.5 py-0.5 rounded text-xs font-medium"
+                              :class="[ABNORMAL_TYPE_BG_COLORS[type], ABNORMAL_TYPE_TEXT_COLORS[type]]"
+                            >
+                              {{ ABNORMAL_TYPE_LABELS[type] }}
+                            </span>
+                          </div>
+                          <p
+                            v-if="item.abnormalRemark"
+                            class="text-xs text-orange-400 line-clamp-2"
+                            :title="item.abnormalRemark"
+                          >
+                            {{ item.abnormalRemark }}
+                          </p>
+                          <p v-else-if="getAbnormalTypes(item).length === 0" class="text-xs text-dark-500">
+                            -
+                          </p>
+                        </div>
                       </td>
                       <td class="py-3 px-3 text-center">
                         <button

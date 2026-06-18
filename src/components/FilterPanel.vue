@@ -8,8 +8,10 @@ import {
   STATUS_COLORS,
   ARRIVAL_STATUS_LABELS,
   ARRIVAL_STATUS_COLORS,
+  ABNORMAL_TYPE_LABELS,
+  ABNORMAL_TYPE_COLORS,
 } from "@/types";
-import type { MaterialStatus, ArrivalStatus } from "@/types";
+import type { MaterialStatus, ArrivalStatus, AbnormalType } from "@/types";
 
 const {
   filter,
@@ -20,6 +22,7 @@ const {
   setQuantityMax,
   setArrivalBatch,
   toggleArrivalStatus,
+  toggleAbnormalType,
   clearFilters,
   hasActiveFilters,
 } = useFilter();
@@ -31,6 +34,7 @@ const showArrivalBatchDropdown = ref(false);
 
 const statusOptions: MaterialStatus[] = ["pending-prep", "pending-review", "ready", "hold"];
 const arrivalStatusOptions: ArrivalStatus[] = ["pending", "arrived", "overdue", "not-set"];
+const abnormalTypeOptions: AbnormalType[] = ["quantity-shortage", "overdue", "no-expected-time"];
 
 function selectTheme(theme: string) {
   setTheme(theme === filter.value.theme ? "" : theme);
@@ -218,6 +222,25 @@ function handleQuantityMaxInput(event: Event) {
             ]"
           >
             {{ ARRIVAL_STATUS_LABELS[status] }}
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-dark-400 mb-2 block">异常类型</label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="type in abnormalTypeOptions"
+            :key="type"
+            @click="toggleAbnormalType(type)"
+            class="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+            :class="[
+              filter.abnormalTypes.includes(type)
+                ? `${ABNORMAL_TYPE_COLORS[type]} text-white`
+                : 'bg-dark-700 text-dark-400 hover:bg-dark-600'
+            ]"
+          >
+            {{ ABNORMAL_TYPE_LABELS[type] }}
           </button>
         </div>
       </div>

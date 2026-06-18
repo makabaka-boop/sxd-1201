@@ -26,7 +26,10 @@ function getMockData(): Material[] {
       arrivalBatch: "BATCH-001",
       expectedArrivalTime: now - day,
       actualArrivalTime: now - day + 2 * 60 * 60 * 1000,
+      actualQuantity: 5,
+      receiver: "张三",
       arrivalRemark: "物流正常，包装完好",
+      abnormalRemark: "",
     },
     {
       id: "mock-2",
@@ -43,7 +46,10 @@ function getMockData(): Material[] {
       arrivalBatch: "BATCH-001",
       expectedArrivalTime: now + day,
       actualArrivalTime: null,
+      actualQuantity: null,
+      receiver: "",
       arrivalRemark: "",
+      abnormalRemark: "",
     },
     {
       id: "mock-3",
@@ -60,7 +66,10 @@ function getMockData(): Material[] {
       arrivalBatch: "BATCH-002",
       expectedArrivalTime: now - 2 * day,
       actualArrivalTime: null,
+      actualQuantity: null,
+      receiver: "",
       arrivalRemark: "供应商延迟发货",
+      abnormalRemark: "",
     },
     {
       id: "mock-4",
@@ -77,7 +86,10 @@ function getMockData(): Material[] {
       arrivalBatch: "",
       expectedArrivalTime: null,
       actualArrivalTime: null,
+      actualQuantity: null,
+      receiver: "",
       arrivalRemark: "",
+      abnormalRemark: "",
     },
     {
       id: "mock-5",
@@ -94,7 +106,10 @@ function getMockData(): Material[] {
       arrivalBatch: "BATCH-001",
       expectedArrivalTime: now - 2 * day,
       actualArrivalTime: now - 2 * day + 3 * 60 * 60 * 1000,
+      actualQuantity: 18,
+      receiver: "李四",
       arrivalRemark: "",
+      abnormalRemark: "少2张，供应商补发中",
     },
     {
       id: "mock-6",
@@ -111,7 +126,10 @@ function getMockData(): Material[] {
       arrivalBatch: "BATCH-002",
       expectedArrivalTime: now + 2 * day,
       actualArrivalTime: null,
+      actualQuantity: null,
+      receiver: "",
       arrivalRemark: "需现场签收",
+      abnormalRemark: "",
     },
     {
       id: "mock-7",
@@ -128,7 +146,10 @@ function getMockData(): Material[] {
       arrivalBatch: "",
       expectedArrivalTime: null,
       actualArrivalTime: null,
+      actualQuantity: null,
+      receiver: "",
       arrivalRemark: "",
+      abnormalRemark: "",
     },
     {
       id: "mock-8",
@@ -145,7 +166,10 @@ function getMockData(): Material[] {
       arrivalBatch: "BATCH-001",
       expectedArrivalTime: now - day,
       actualArrivalTime: now - day + 60 * 60 * 1000,
+      actualQuantity: 1,
+      receiver: "王五",
       arrivalRemark: "",
+      abnormalRemark: "",
     },
   ];
 }
@@ -168,7 +192,11 @@ function normalizeMaterial(raw: any): Material {
       typeof raw.expectedArrivalTime === "number" ? raw.expectedArrivalTime : null,
     actualArrivalTime:
       typeof raw.actualArrivalTime === "number" ? raw.actualArrivalTime : null,
+    actualQuantity:
+      typeof raw.actualQuantity === "number" ? raw.actualQuantity : null,
+    receiver: raw.receiver || "",
     arrivalRemark: raw.arrivalRemark || "",
+    abnormalRemark: raw.abnormalRemark || "",
   };
 }
 
@@ -246,7 +274,10 @@ export function useMaterials() {
       arrivalBatch: data.arrivalBatch || "",
       expectedArrivalTime: data.expectedArrivalTime ?? null,
       actualArrivalTime: data.actualArrivalTime ?? null,
+      actualQuantity: data.actualQuantity ?? null,
+      receiver: data.receiver || "",
       arrivalRemark: data.arrivalRemark || "",
+      abnormalRemark: data.abnormalRemark || "",
     };
     materials.value.push(newMaterial);
     return newMaterial;
@@ -295,6 +326,53 @@ export function useMaterials() {
     });
   }
 
+  function batchSign(
+    ids: string[],
+    data: {
+      actualArrivalTime?: number | null;
+      actualQuantity?: number | null;
+      receiver?: string;
+      arrivalRemark?: string;
+      abnormalRemark?: string;
+    }
+  ) {
+    const now = Date.now();
+    ids.forEach((id) => {
+      const mat = materials.value.find((m) => m.id === id);
+      if (mat) {
+        if (data.actualArrivalTime !== undefined) {
+          mat.actualArrivalTime = data.actualArrivalTime;
+        }
+        if (data.actualQuantity !== undefined) {
+          mat.actualQuantity = data.actualQuantity;
+        }
+        if (data.receiver !== undefined) {
+          mat.receiver = data.receiver;
+        }
+        if (data.arrivalRemark !== undefined) {
+          mat.arrivalRemark = data.arrivalRemark;
+        }
+        if (data.abnormalRemark !== undefined) {
+          mat.abnormalRemark = data.abnormalRemark;
+        }
+        mat.updatedAt = now;
+      }
+    });
+  }
+
+  function signMaterial(
+    id: string,
+    data: {
+      actualArrivalTime?: number | null;
+      actualQuantity?: number | null;
+      receiver?: string;
+      arrivalRemark?: string;
+      abnormalRemark?: string;
+    }
+  ) {
+    batchSign([id], data);
+  }
+
   function getMaterialsByAreaAndTheme(area: string, theme: string): Material[] {
     return materials.value
       .filter((m) => m.area === area && m.theme === theme)
@@ -313,6 +391,8 @@ export function useMaterials() {
     getMaterialById,
     reorderMaterials,
     batchUpdateStatus,
+    batchSign,
+    signMaterial,
     getMaterialsByAreaAndTheme,
   };
 }

@@ -1,6 +1,6 @@
 import { ref, computed } from "vue";
-import type { Material, FilterState, MaterialStatus, ArrivalStatus } from "@/types";
-import { getArrivalStatus } from "@/types";
+import type { Material, FilterState, MaterialStatus, ArrivalStatus, AbnormalType } from "@/types";
+import { getArrivalStatus, getAbnormalTypes } from "@/types";
 import { useMaterials } from "./useMaterials";
 
 const { sortedMaterials } = useMaterials();
@@ -13,6 +13,7 @@ const filter = ref<FilterState>({
   quantityMax: null,
   arrivalBatch: "",
   arrivalStatuses: [],
+  abnormalTypes: [],
 });
 
 const filteredMaterials = computed(() => {
@@ -47,6 +48,15 @@ const filteredMaterials = computed(() => {
     if (filter.value.arrivalStatuses.length > 0) {
       const arrivalStatus = getArrivalStatus(m);
       if (!filter.value.arrivalStatuses.includes(arrivalStatus)) {
+        return false;
+      }
+    }
+    if (filter.value.abnormalTypes.length > 0) {
+      const abnormalTypes = getAbnormalTypes(m);
+      const hasMatch = filter.value.abnormalTypes.some((type) =>
+        abnormalTypes.includes(type)
+      );
+      if (!hasMatch) {
         return false;
       }
     }
@@ -92,6 +102,15 @@ function toggleArrivalStatus(status: ArrivalStatus) {
   }
 }
 
+function toggleAbnormalType(type: AbnormalType) {
+  const index = filter.value.abnormalTypes.indexOf(type);
+  if (index === -1) {
+    filter.value.abnormalTypes.push(type);
+  } else {
+    filter.value.abnormalTypes.splice(index, 1);
+  }
+}
+
 function clearFilters() {
   filter.value = {
     theme: "",
@@ -101,6 +120,7 @@ function clearFilters() {
     quantityMax: null,
     arrivalBatch: "",
     arrivalStatuses: [],
+    abnormalTypes: [],
   };
 }
 
@@ -112,7 +132,8 @@ function hasActiveFilters(): boolean {
     filter.value.quantityMin !== null ||
     filter.value.quantityMax !== null ||
     filter.value.arrivalBatch !== "" ||
-    filter.value.arrivalStatuses.length > 0
+    filter.value.arrivalStatuses.length > 0 ||
+    filter.value.abnormalTypes.length > 0
   );
 }
 
@@ -127,6 +148,7 @@ export function useFilter() {
     setQuantityMax,
     setArrivalBatch,
     toggleArrivalStatus,
+    toggleAbnormalType,
     clearFilters,
     hasActiveFilters,
   };

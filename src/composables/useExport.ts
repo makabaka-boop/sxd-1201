@@ -1,5 +1,12 @@
 import type { Material } from "@/types";
-import { STATUS_LABELS, ARRIVAL_STATUS_LABELS, getArrivalStatus, formatTimestamp } from "@/types";
+import {
+  STATUS_LABELS,
+  ARRIVAL_STATUS_LABELS,
+  ABNORMAL_TYPE_LABELS,
+  getArrivalStatus,
+  getAbnormalTypes,
+  formatTimestamp,
+} from "@/types";
 
 export function useExport() {
   function materialsToCSV(materials: Material[]): string {
@@ -7,7 +14,9 @@ export function useExport() {
       "物料名称",
       "展示主题",
       "所在区域",
-      "数量",
+      "计划数量",
+      "实际到场数量",
+      "到场差异",
       "尺寸",
       "摆放顺序",
       "风险说明",
@@ -16,28 +25,45 @@ export function useExport() {
       "预计到场时间",
       "实际到场时间",
       "到场状态",
+      "签收人",
       "到场备注",
+      "异常类型",
+      "异常说明",
       "创建时间",
       "更新时间",
     ];
 
-    const rows = materials.map((m) => [
-      m.name,
-      m.theme,
-      m.area,
-      m.quantity.toString(),
-      m.size,
-      m.order.toString(),
-      m.risk,
-      STATUS_LABELS[m.status] || m.status,
-      m.arrivalBatch,
-      formatTimestamp(m.expectedArrivalTime),
-      formatTimestamp(m.actualArrivalTime),
-      ARRIVAL_STATUS_LABELS[getArrivalStatus(m)],
-      m.arrivalRemark,
-      new Date(m.createdAt).toLocaleString("zh-CN"),
-      new Date(m.updatedAt).toLocaleString("zh-CN"),
-    ]);
+    const rows = materials.map((m) => {
+      const actualQty = typeof m.actualQuantity === "number" ? m.actualQuantity : null;
+      const qtyDiff = actualQty !== null ? actualQty - m.quantity : null;
+      const abnormalTypes = getAbnormalTypes(m);
+      const abnormalTypeStr = abnormalTypes
+        .map((t) => ABNORMAL_TYPE_LABELS[t])
+        .join("、");
+
+      return [
+        m.name,
+        m.theme,
+        m.area,
+        m.quantity.toString(),
+        actualQty !== null ? actualQty.toString() : "-",
+        qtyDiff !== null ? (qtyDiff > 0 ? `+${qtyDiff}` : `${qtyDiff}`) : "-",
+        m.size,
+        m.order.toString(),
+        m.risk,
+        STATUS_LABELS[m.status] || m.status,
+        m.arrivalBatch,
+        formatTimestamp(m.expectedArrivalTime),
+        formatTimestamp(m.actualArrivalTime),
+        ARRIVAL_STATUS_LABELS[getArrivalStatus(m)],
+        m.receiver || "-",
+        m.arrivalRemark,
+        abnormalTypeStr || "正常",
+        m.abnormalRemark || "-",
+        new Date(m.createdAt).toLocaleString("zh-CN"),
+        new Date(m.updatedAt).toLocaleString("zh-CN"),
+      ];
+    });
 
     const csvContent = [headers, ...rows]
       .map((row) =>
@@ -81,7 +107,9 @@ export function useExport() {
       "区域",
       "顺序",
       "物料名称",
-      "数量",
+      "计划数量",
+      "实到数量",
+      "到场差异",
       "尺寸",
       "状态",
       "风险说明",
@@ -89,7 +117,10 @@ export function useExport() {
       "预计到场时间",
       "实际到场时间",
       "到场状态",
+      "签收人",
       "到场备注",
+      "异常类型",
+      "异常说明",
       "复核结果",
       "备注",
     ];
@@ -100,23 +131,37 @@ export function useExport() {
       return a.order - b.order;
     });
 
-    const rows = sorted.map((m) => [
-      m.theme,
-      m.area,
-      m.order.toString(),
-      m.name,
-      m.quantity.toString(),
-      m.size,
-      STATUS_LABELS[m.status] || m.status,
-      m.risk,
-      m.arrivalBatch,
-      formatTimestamp(m.expectedArrivalTime),
-      formatTimestamp(m.actualArrivalTime),
-      ARRIVAL_STATUS_LABELS[getArrivalStatus(m)],
-      m.arrivalRemark,
-      "",
-      "",
-    ]);
+    const rows = sorted.map((m) => {
+      const actualQty = typeof m.actualQuantity === "number" ? m.actualQuantity : null;
+      const qtyDiff = actualQty !== null ? actualQty - m.quantity : null;
+      const abnormalTypes = getAbnormalTypes(m);
+      const abnormalTypeStr = abnormalTypes
+        .map((t) => ABNORMAL_TYPE_LABELS[t])
+        .join("、");
+
+      return [
+        m.theme,
+        m.area,
+        m.order.toString(),
+        m.name,
+        m.quantity.toString(),
+        actualQty !== null ? actualQty.toString() : "-",
+        qtyDiff !== null ? (qtyDiff > 0 ? `+${qtyDiff}` : `${qtyDiff}`) : "-",
+        m.size,
+        STATUS_LABELS[m.status] || m.status,
+        m.risk,
+        m.arrivalBatch,
+        formatTimestamp(m.expectedArrivalTime),
+        formatTimestamp(m.actualArrivalTime),
+        ARRIVAL_STATUS_LABELS[getArrivalStatus(m)],
+        m.receiver || "-",
+        m.arrivalRemark,
+        abnormalTypeStr || "正常",
+        m.abnormalRemark || "-",
+        "",
+        "",
+      ];
+    });
 
     const csvContent = [headers, ...rows]
       .map((row) =>

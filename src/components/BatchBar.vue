@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X, Check, Package, Eye, Pause, XCircle } from "lucide-vue-next";
+import { X, Check, Package, Eye, Pause, XCircle, CheckSquare } from "lucide-vue-next";
 import { STATUS_LABELS } from "@/types";
 import type { MaterialStatus } from "@/types";
 import { useMaterials } from "@/composables/useMaterials";
@@ -12,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "clear"): void;
   (e: "updated"): void;
+  (e: "batch-sign"): void;
 }>();
 
 const { batchUpdateStatus } = useMaterials();
@@ -27,6 +28,11 @@ function handleBatchStatus(status: MaterialStatus) {
   if (props.selectedIds.length === 0) return;
   batchUpdateStatus(props.selectedIds, status);
   emit("updated");
+}
+
+function handleBatchSign() {
+  if (props.selectedIds.length === 0) return;
+  emit("batch-sign");
 }
 </script>
 
@@ -44,6 +50,18 @@ function handleBatchStatus(status: MaterialStatus) {
             class="p-1 rounded text-dark-400 hover:text-white hover:bg-dark-700 transition-colors"
           >
             <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="w-px h-6 bg-dark-600"></div>
+
+        <div class="flex items-center gap-2">
+          <button
+            @click="handleBatchSign"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors bg-primary-500 hover:bg-primary-400 text-dark-900"
+          >
+            <CheckSquare class="w-3.5 h-3.5" />
+            批量签收
           </button>
         </div>
 

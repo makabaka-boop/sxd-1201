@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical, Edit2, Trash2, AlertCircle, AlertTriangle, Truck, Package } from "lucide-vue-next";
+import { GripVertical, Edit2, Trash2, AlertCircle, AlertTriangle, Truck, Package, User, CheckSquare } from "lucide-vue-next";
 import type { Material } from "@/types";
 import {
   STATUS_LABELS,
@@ -11,6 +11,10 @@ import {
   ARRIVAL_STATUS_TEXT_COLORS,
   getArrivalStatus,
   formatTimestamp,
+  getAbnormalTypes,
+  ABNORMAL_TYPE_LABELS,
+  ABNORMAL_TYPE_BG_COLORS,
+  ABNORMAL_TYPE_TEXT_COLORS,
 } from "@/types";
 import { useChecker } from "@/composables/useChecker";
 import { computed } from "vue";
@@ -24,6 +28,7 @@ const emit = defineEmits<{
   (e: "select"): void;
   (e: "edit"): void;
   (e: "delete"): void;
+  (e: "sign"): void;
 }>();
 
 const { getMaterialIssues, hasIssue } = useChecker();
@@ -31,6 +36,16 @@ const { getMaterialIssues, hasIssue } = useChecker();
 const issues = computed(() => getMaterialIssues(props.material.id));
 const hasIssues = computed(() => hasIssue(props.material.id));
 const arrivalStatus = computed(() => getArrivalStatus(props.material));
+const abnormalTypes = computed(() => getAbnormalTypes(props.material));
+const hasAbnormal = computed(() => abnormalTypes.value.length > 0);
+const isSigned = computed(() => typeof props.material.actualArrivalTime === "number");
+
+const quantityDiff = computed(() => {
+  if (typeof props.material.actualQuantity === "number") {
+    return props.material.actualQuantity - props.material.quantity;
+  }
+  return null;
+});
 </script>
 
 <template>
@@ -38,7 +53,8 @@ const arrivalStatus = computed(() => getArrivalStatus(props.material));
     class="group relative bg-dark-800 border rounded-lg p-3 transition-all cursor-pointer hover:shadow-lg"
     :class="[
       selected ? 'border-primary-500 bg-primary-500/5' : 'border-dark-700 hover:border-dark-600',
-      hasIssues ? 'ring-1 ring-red-500/30' : ''
+      hasIssues ? 'ring-1 ring-red-500/30' : '',
+      hasAbnormal && !hasIssues ? 'ring-1 ring-orange-500/30' : ''
     ]"
     @click="emit('select')"
   >
@@ -99,7 +115,7 @@ const arrivalStatus = computed(() => getArrivalStatus(props.material));
 
         <div class="flex items-center gap-4 text-xs mb-1.5">
           <div class="flex items-center gap-1">
-            <span class="text-dark-500">数量</span>
+            <span class="text-dark-500">计划</span>
             <span
               class="font-medium"
               :class="material.quantity <= 0 ? 'text-red-400' : 'text-dark-200'"
@@ -107,7 +123,19 @@ const arrivalStatus = computed(() => getArrivalStatus(props.material));
               {{ material.quantity }}
             </span>
           </div>
-          <div class="flex items-center gap-1 min-w-0">
+          <div v-if="typeof material.actualQuantity === 'number'" class="flex items-center gap-1">
+            <span class="text-dark-500">实到</span>
+            <span
+              class="font-medium"
+              :class="quantityDiff !== null && quantityDiff < 0 ? 'text-orange-400' : 'text-green-400'"
+            >
+              {{ material.actualQuantity }}
+              <span v-if="quantityDiff !== null && quantityDiff !== 0" class="text-xs">
+                ({{ quantityDiff > 0 ? '+' : '' }}{{ quantityDiff }})
+              </span>
+            </span>
+          </div>
+          <div class="flex items-center gap-1 min-w-0 flex-1">
             <span class="text-dark-500 flex-shrink-0">尺寸</span>
             <span v-if="material.size" class="text-dark-300 truncate">
               {{ material.size }}
@@ -131,6 +159,12 @@ const arrivalStatus = computed(() => getArrivalStatus(props.material));
           </div>
         </div>
 
+        <div v-if="material.receiver" class="flex items-center gap-1 text-xs mb-1">
+          <User class="w-3 h-3 text-dark-500" />
+          <span class="text-dark-500">签收人：</span>
+          <span class="text-dark-300">{{ material.receiver }}</span>
+        </div>
+
         <div class="text-xs text-dark-500">
           风险：
           <span v-if="material.risk" class="text-dark-400 line-clamp-1">
@@ -146,7 +180,24 @@ const arrivalStatus = computed(() => getArrivalStatus(props.material));
           </span>
         </div>
 
-        <div v-if="hasIssues" class="mt-2 flex flex-wrap gap-1">
+        <div v-if="material.abnormalRemark" class="text-xs text-orange-400 mt-1 flex items-start gap-1">
+          <AlertTriangle class="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span class="line-clamp-1">异常：{{ material.abnormalRemark }}</span>
+        </div>
+
+        <div v-if="hasAbnormal" class="mt-2 flex flex-wrap gap-1">
+          <span
+            v-for="type in abnormalTypes"
+            :key="type"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border"
+            :class="[ABNORMAL_TYPE_BG_COLORS[type], ABNORMAL_TYPE_TEXT_COLORS[type], 'border-current/20']"
+          >
+            <AlertTriangle class="w-3 h-3" />
+            {{ ABNORMAL_TYPE_LABELS[type] }}
+          </span>
+        </div>
+
+        <div v-else-if="hasIssues" class="mt-2 flex flex-wrap gap-1">
           <span
             v-for="issue in issues"
             :key="issue"
@@ -159,6 +210,13 @@ const arrivalStatus = computed(() => getArrivalStatus(props.material));
       </div>
 
       <div class="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <button
+          @click.stop="emit('sign')"
+          class="p-1 rounded text-dark-400 hover:text-primary-400 hover:bg-dark-700 transition-colors"
+          :title="isSigned ? '修改签收' : '到场签收'"
+        >
+          <CheckSquare class="w-3.5 h-3.5" />
+        </button>
         <button
           @click.stop="emit('edit')"
           class="p-1 rounded text-dark-400 hover:text-white hover:bg-dark-700 transition-colors"

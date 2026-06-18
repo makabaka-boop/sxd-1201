@@ -10,6 +10,12 @@ export type ArrivalStatus =
   | "overdue"
   | "not-set";
 
+export type AbnormalType =
+  | "quantity-shortage"
+  | "overdue"
+  | "no-expected-time"
+  | "none";
+
 export interface Material {
   id: string;
   name: string;
@@ -25,7 +31,10 @@ export interface Material {
   arrivalBatch: string;
   expectedArrivalTime: number | null;
   actualArrivalTime: number | null;
+  actualQuantity: number | null;
+  receiver: string;
   arrivalRemark: string;
+  abnormalRemark: string;
 }
 
 export interface FilterState {
@@ -36,6 +45,7 @@ export interface FilterState {
   quantityMax: number | null;
   arrivalBatch: string;
   arrivalStatuses: ArrivalStatus[];
+  abnormalTypes: AbnormalType[];
 }
 
 export interface CheckResult {
@@ -45,6 +55,7 @@ export interface CheckResult {
   missingRisk: Material[];
   missingExpectedArrival: Material[];
   overdueNotArrived: Material[];
+  quantityShortage: Material[];
 }
 
 export const STATUS_LABELS: Record<MaterialStatus, string> = {
@@ -103,6 +114,34 @@ export const ARRIVAL_STATUS_BG_COLORS: Record<ArrivalStatus, string> = {
   "not-set": "bg-gray-500/10",
 };
 
+export const ABNORMAL_TYPE_LABELS: Record<AbnormalType, string> = {
+  "quantity-shortage": "数量短缺",
+  overdue: "已逾期",
+  "no-expected-time": "无预计到场",
+  none: "正常",
+};
+
+export const ABNORMAL_TYPE_COLORS: Record<AbnormalType, string> = {
+  "quantity-shortage": "bg-orange-500",
+  overdue: "bg-red-500",
+  "no-expected-time": "bg-purple-500",
+  none: "bg-green-500",
+};
+
+export const ABNORMAL_TYPE_TEXT_COLORS: Record<AbnormalType, string> = {
+  "quantity-shortage": "text-orange-400",
+  overdue: "text-red-400",
+  "no-expected-time": "text-purple-400",
+  none: "text-green-400",
+};
+
+export const ABNORMAL_TYPE_BG_COLORS: Record<AbnormalType, string> = {
+  "quantity-shortage": "bg-orange-500/10",
+  overdue: "bg-red-500/10",
+  "no-expected-time": "bg-purple-500/10",
+  none: "bg-green-500/10",
+};
+
 export function getArrivalStatus(material: Material): ArrivalStatus {
   const expected =
     typeof (material as any).expectedArrivalTime === "number"
@@ -122,6 +161,45 @@ export function getArrivalStatus(material: Material): ArrivalStatus {
     return "overdue";
   }
   return "pending";
+}
+
+export function getAbnormalTypes(material: Material): AbnormalType[] {
+  const types: AbnormalType[] = [];
+  const expected =
+    typeof material.expectedArrivalTime === "number"
+      ? material.expectedArrivalTime
+      : null;
+  const actual =
+    typeof material.actualArrivalTime === "number"
+      ? material.actualArrivalTime
+      : null;
+  const actualQty =
+    typeof material.actualQuantity === "number" ? material.actualQuantity : null;
+
+  if (!expected && !actual) {
+    types.push("no-expected-time");
+  }
+
+  if (expected && !actual && expected < Date.now()) {
+    types.push("overdue");
+  }
+
+  if (actualQty !== null && actualQty < material.quantity) {
+    types.push("quantity-shortage");
+  }
+
+  return types;
+}
+
+export function hasAbnormal(material: Material): boolean {
+  return getAbnormalTypes(material).length > 0;
+}
+
+export function getQuantityDiff(material: Material): number {
+  const actualQty =
+    typeof material.actualQuantity === "number" ? material.actualQuantity : null;
+  if (actualQty === null) return 0;
+  return actualQty - material.quantity;
 }
 
 export function formatTimestamp(ts: number | null | undefined): string {

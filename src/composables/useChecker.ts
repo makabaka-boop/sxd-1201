@@ -63,6 +63,16 @@ export function useChecker() {
     });
   });
 
+  const quantityShortage = computed(() => {
+    return materials.value.filter((m: Material) => {
+      const actualQty = (m as any).actualQuantity;
+      return (
+        typeof actualQty === "number" &&
+        actualQty < m.quantity
+      );
+    });
+  });
+
   const checkResult = computed<CheckResult>(() => ({
     zeroQuantity: zeroQuantity.value,
     duplicateOrder: duplicateOrder.value,
@@ -70,6 +80,7 @@ export function useChecker() {
     missingRisk: missingRisk.value,
     missingExpectedArrival: missingExpectedArrival.value,
     overdueNotArrived: overdueNotArrived.value,
+    quantityShortage: quantityShortage.value,
   }));
 
   const totalIssues = computed(() => {
@@ -79,7 +90,8 @@ export function useChecker() {
       missingSize.value.length +
       missingRisk.value.length +
       missingExpectedArrival.value.length +
-      overdueNotArrived.value.length
+      overdueNotArrived.value.length +
+      quantityShortage.value.length
     );
   });
 
@@ -90,7 +102,8 @@ export function useChecker() {
       missingSize.value.some((m) => m.id === materialId) ||
       missingRisk.value.some((m) => m.id === materialId) ||
       missingExpectedArrival.value.some((m) => m.id === materialId) ||
-      overdueNotArrived.value.some((m) => m.id === materialId)
+      overdueNotArrived.value.some((m) => m.id === materialId) ||
+      quantityShortage.value.some((m) => m.id === materialId)
     );
   }
 
@@ -114,6 +127,15 @@ export function useChecker() {
     if (overdueNotArrived.value.some((m) => m.id === materialId)) {
       issues.push("已逾期未到场");
     }
+    if (quantityShortage.value.some((m) => m.id === materialId)) {
+      const mat = quantityShortage.value.find((m) => m.id === materialId);
+      if (mat) {
+        const diff = mat.quantity - (mat as any).actualQuantity;
+        issues.push(`数量短缺${diff}件`);
+      } else {
+        issues.push("数量短缺");
+      }
+    }
     return issues;
   }
 
@@ -125,6 +147,7 @@ export function useChecker() {
     missingRisk,
     missingExpectedArrival,
     overdueNotArrived,
+    quantityShortage,
     totalIssues,
     hasIssue,
     getMaterialIssues,
